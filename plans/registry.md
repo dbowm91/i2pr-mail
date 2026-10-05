@@ -25,13 +25,14 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M006 blocked | M001–M005 closed; M006 requires a stable i2pr managed-app transport/gateway. |
+| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M007 ready | M001–M005 remain closed; M007 corrects request/state/protocol defects before router integration. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective M007 ready; M006 blocked | M006 additionally requires M007–M009 closure and stable upstream i2pr Plan 355 app-principal gateway. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-None. All implementable milestones are closed; M006 remains externally blocked.
+| Mail backend post-M005 corrective | M007 request/state/protocol correctness | ready | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | M001–M005 are closed; findings are local and require no external interface. |
 
 ## Active closure work
 
@@ -41,7 +42,9 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Upstream i2pr registry currently contains only a contract/architecture Plan 345; no managed-app gateway or destination stream API is available. Recheck on upstream change. |
+| Mail backend post-M005 corrective | M008 runtime decomposition + transport seam | blocked | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | M007 closure. |
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | blocked | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | M008 closure. |
+| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | i2pr-mail M007–M009 closure plus upstream i2pr Plan 354 → Plan 355; Plan 355 owns the router app-principal SAM/I2CP gateway. |
 
 ## Recently closed or conditionally closed work
 
