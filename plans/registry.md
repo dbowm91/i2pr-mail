@@ -25,13 +25,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M001 ready | M001 has no hard dependency; later milestones sequence from it. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M002 active | M001 closed; implementation continues sequentially. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend foundation | M001 workspace/domain/boundaries | ready | plans/implementation/mail-backend-foundation/001-workspace-domain-and-boundary-foundation.md | New repository; canonical product/security decisions are frozen by ADR-0001. |
+| Mail backend foundation | M002 MIME + durable storage | active | plans/implementation/mail-backend-foundation/002-mime-and-durable-storage.md | M001 closed; MIME and persistence implementation in progress. |
 
 ## Active closure work
 
@@ -41,7 +41,6 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M002 MIME + durable storage | blocked | plans/implementation/mail-backend-foundation/002-mime-and-durable-storage.md | M001 closure. |
 | Mail backend foundation | M003 POP3 receive/sync | blocked | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | M001 and M002 closure. |
 | Mail backend foundation | M004 SMTP compose/outbox | blocked | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | M001 and M002 closure. |
 | Mail backend foundation | M005 backend convergence | blocked | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | M003 and M004 closure. |

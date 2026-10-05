@@ -1,0 +1,15 @@
+[package]
+name = "i2pr-mail-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+i2pr-mail-domain = { path = "../mail-domain" }
+i2pr-mail-mime = { path = "../mail-mime" }
+i2pr-mail-proto = { path = "../mail-proto" }
+i2pr-mail-store = { path = "../mail-store" }
+
+[lints]
+workspace = true

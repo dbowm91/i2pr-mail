@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 001 — Workspace, Domain, and Boundary Foundation
 
-Status: ready for handoff
+Status: closed
 
 Repository baseline: ec8056a75ccba628994aa7610ac5a07cd3d4a986 on codex/foundation-planning
 

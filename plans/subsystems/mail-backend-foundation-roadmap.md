@@ -229,8 +229,8 @@ This roadmap closes only when M001-M006 have evidence-based closure, the backend
 
 | Milestone | Status | Implementation plan | Closure record | Blockers |
 |---|---|---|---|---|
-| M001 | ready | plans/implementation/mail-backend-foundation/001-workspace-domain-and-boundary-foundation.md | — | none |
-| M002 | blocked | plans/implementation/mail-backend-foundation/002-mime-and-durable-storage.md | — | M001 |
+| M001 | closed | plans/implementation/mail-backend-foundation/001-workspace-domain-and-boundary-foundation.md | plans/closure/mail-backend-foundation/001-status.md | none |
+| M002 | active | plans/implementation/mail-backend-foundation/002-mime-and-durable-storage.md | — | none |
 | M003 | blocked | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | — | M001, M002 |
 | M004 | blocked | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | — | M001, M002 |
 | M005 | blocked | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | — | M003, M004 |

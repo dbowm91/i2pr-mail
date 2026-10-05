@@ -1,0 +1,23 @@
+[workspace]
+resolver = "3"
+members = ["crates/mail-domain", "crates/mail-mime", "crates/mail-proto", "crates/mail-store", "crates/mail-runtime"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+mail-parser = "0.11.9"
+mail-builder = { version = "1.0.0", default-features = false }
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+sha2 = "0.10"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"

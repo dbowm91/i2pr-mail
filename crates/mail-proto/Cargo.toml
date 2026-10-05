@@ -1,0 +1,12 @@
+[package]
+name = "i2pr-mail-proto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+i2pr-mail-domain = { path = "../mail-domain" }
+
+[lints]
+workspace = true
