@@ -112,8 +112,16 @@ M001 workspace/domain/boundaries
                   \     /
                    M005 backend service convergence
                              |
-                             +--> M006 i2pr adapter
-                                  also requires stable i2pr app gateway
+                             +--> M007 corrective correctness
+                                   |
+                                   v
+                                  M008 runtime decomposition
+                                   |
+                                   v
+                                  M009 hosted qualification
+                                   |
+                                   +--> M006 i2pr adapter
+                                        also requires i2pr Plan 354 -> Plan 355
 
 Dependency classification:
 
