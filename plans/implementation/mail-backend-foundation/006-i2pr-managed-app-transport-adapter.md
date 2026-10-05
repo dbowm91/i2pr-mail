@@ -2,7 +2,7 @@
 
 Status: blocked
 
-Repository baseline: planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; execute only after M005 closure and a stable i2pr managed-app transport contract
+Repository baseline: original planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; corrected on post-M005 planning head; execute only after M007-M009 closure and upstream i2pr Plan 355 closure
 
 Source roadmap:
 
