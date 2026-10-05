@@ -4,4 +4,4 @@ Rust backend-first mail client for I2P in-network mail services, designed as a m
 
 The initial product boundary is intentionally narrow: Postman-compatible POP3 receipt, SMTP submission, durable local mail state, MIME parsing/building, and a frontend-neutral application API. Direct clearnet networking, generic Internet mail-provider support, and the graphical frontend are outside the foundation.
 
-Development sequencing and implementation handoff are controlled by `plans/registry.md`.
+Development sequencing and implementation handoff are controlled by plans/registry.md.
