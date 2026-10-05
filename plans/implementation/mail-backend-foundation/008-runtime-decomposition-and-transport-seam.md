@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 008 — Runtime Decomposition and Transport Seam Stabilization
 
-Status: blocked
+Status: closed
 
 Repository baseline: planning baseline `e1db79b55e3fdd128b9dafe701b50c5dbf5db9c5`; execute after M007 closure
 

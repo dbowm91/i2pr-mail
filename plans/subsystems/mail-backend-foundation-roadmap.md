@@ -129,9 +129,8 @@ Dependency classification:
 - M003 hard-depends on M001/M002.
 - M004 hard-depends on M001/M002.
 - M005 hard-depends on M003/M004.
-- M007 is closed.
-- M008 is dependency-ready.
-- M009 hard-depends on M008.
+- M007 and M008 are closed.
+- M009 is dependency-ready.
 - M006 hard-depends on M005 plus M007-M009 corrective closure, and interface-depends on upstream i2pr Plan 355 (which follows Plan 354).
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
@@ -247,5 +246,5 @@ This roadmap closes only when M001-M006 and the post-M005 M007-M009 corrective s
 | M005 | closed | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | plans/closure/mail-backend-foundation/005-status.md | none |
 | M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M007–M009 + upstream i2pr Plan 355 |
 | M007 | closed | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | plans/closure/mail-backend-foundation/007-status.md | none |
-| M008 | ready | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | — | none |
-| M009 | blocked | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | — | M008 |
+| M008 | closed | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | plans/closure/mail-backend-foundation/008-status.md | none |
+| M009 | ready | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | — | none |
