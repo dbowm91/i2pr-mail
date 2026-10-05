@@ -62,11 +62,11 @@ Proposal 170 administration is not required for basic mail operation.
 
 ## 4. Current state
 
-At the planning baseline the repository contains only the project README and this planning bootstrap; no production mail code, schema, compatibility contract, or released artifact exists.
+M001-M005 are implemented and closed. The repository now contains the domain, MIME facade, durable store, deterministic POP3/SMTP runtime, and frontend-neutral BackendService described by those milestones.
 
-The target i2pr native-app branch has a runtime-neutral application contract but no production app manager/gateway. i2pr Plan 349 is correcting direction/reply semantics and reserving the underspecified generic brokered-TCP open path. The router-side application transport remains a future interface dependency.
+Post-closure review is owned by `plans/subsystems/mail-backend-post-m005-corrective-addendum.md`. M007 corrects request/state/protocol defects, M008 decomposes the runtime and freezes the integration seam, and M009 adds hosted verification.
 
-Therefore M001-M005 are intentionally implementable without i2pr. M006 is blocked until the downstream interface is stable.
+Upstream i2pr has advanced beyond the original Plan-345-only assumption. Managed-native-app Plans 345, 349, 352, and 353 are closed; Plan 354 is ready to extract listener-independent SAM/I2CP private connection seams; Plan 355 is registered behind it to provide the router app-principal gateway. M006 therefore remains blocked on both the local M007-M009 corrective closure and upstream Plan 355's stable service-stream contract.
 
 ## 5. Target architecture
 
@@ -121,7 +121,10 @@ Dependency classification:
 - M003 hard-depends on M001/M002.
 - M004 hard-depends on M001/M002.
 - M005 hard-depends on M003/M004.
-- M006 hard-depends on M005 and interface-depends on corrected/stable i2pr managed-app transport.
+- M007 hard-depends on the closed M001-M005 foundation.
+- M008 hard-depends on M007.
+- M009 hard-depends on M008.
+- M006 hard-depends on M005 plus M007-M009 corrective closure, and interface-depends on upstream i2pr Plan 355 (which follows Plan 354).
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
 ## 7. Milestones
@@ -172,7 +175,7 @@ Class: capability/integration.
 
 Objective: replace fake transport with the stable authorized i2pr application transport without changing mail-domain/protocol/store contracts.
 
-Blocker: corrected i2pr app contract plus production router-side app-principal transport gateway.
+Blocker: M007-M009 corrective closure plus upstream i2pr Plan 355 router app-principal gateway over the Plan-354 private SAM/I2CP seams.
 
 Exit: real adapter smoke/qualification plus negative evidence that no direct/loopback fallback is required.
 
@@ -223,7 +226,7 @@ Live I2P/network tests are not routine CI prerequisites. M006 may add an explici
 
 ## 11. Completion definition
 
-This roadmap closes only when M001-M006 have evidence-based closure, the backend is independently functional, and i2pr integration preserves the no-direct-network authority boundary. GUI completion is not required.
+This roadmap closes only when M001-M006 and the post-M005 M007-M009 corrective sequence have evidence-based closure, the backend is independently functional, and i2pr integration preserves the no-direct-network authority boundary. GUI completion is not required.
 
 ## 12. Milestone status
 
@@ -234,4 +237,7 @@ This roadmap closes only when M001-M006 have evidence-based closure, the backend
 | M003 | closed | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | plans/closure/mail-backend-foundation/003-status.md | none |
 | M004 | closed | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | plans/closure/mail-backend-foundation/004-status.md | none |
 | M005 | closed | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | plans/closure/mail-backend-foundation/005-status.md | none |
-| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M005 + stable i2pr app transport |
+| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M007–M009 + upstream i2pr Plan 355 |
+| M007 | ready | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | — | none |
+| M008 | blocked | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | — | M007 |
+| M009 | blocked | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | — | M008 |
