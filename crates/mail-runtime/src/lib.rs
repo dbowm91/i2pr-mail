@@ -1,4 +1,6 @@
 //! Runtime owns authorized transport and orchestration; protocol crates stay sans-I/O.
+use i2pr_mail_domain::{ReceiveState, StoredMessageState, SubmissionProgress, SubmissionState};
+use i2pr_mail_proto::{pop3, smtp};
 pub trait MailTransport: Send + Sync {
     /// Implementations must bound connect and stream I/O by this shared deadline
     /// and promptly close an owned stream when its cancellation flag is set.
@@ -72,6 +74,12 @@ pub struct SyncReport {
 fn write_command(stream: &mut dyn ByteStream, command: &[u8]) -> Result<(), SyncError> {
     stream.write_all(command).map_err(map_sync_transport)?;
     stream.write_all(b"\r\n").map_err(map_sync_transport)
+}
+
+/// Writes a line that the protocol crate already bounded and terminated, so no
+/// command buffer is formatted at the call site.
+fn write_line(stream: &mut dyn ByteStream, line: &[u8]) -> Result<(), SyncError> {
+    stream.write_all(line).map_err(map_sync_transport)
 }
 fn map_sync_transport(error: TransportError) -> SyncError {
     match error {
@@ -190,15 +198,13 @@ pub fn sync_pop3_with_control(
     if read_status(stream.as_mut())? {
         let _ = read_multiline(stream.as_mut())?;
     }
-    // POP3 credentials are line atoms and may not contain protocol delimiters.
-    if username.bytes().any(|b| !(0x20..=0x7e).contains(&b))
-        || password.bytes().any(|b| !(0x20..=0x7e).contains(&b))
-    {
-        return Err(SyncError::Authentication);
-    }
-    write_command(stream.as_mut(), format!("USER {username}").as_bytes())?;
+    // Credentials are bounded against the frozen POP3 ceilings before any command
+    // buffer is formatted, and a rejected credential never reaches the stream.
+    let user_line = pop3::user_command(username).map_err(|_| SyncError::Authentication)?;
+    let pass_line = pop3::pass_command(password).map_err(|_| SyncError::Authentication)?;
+    write_line(stream.as_mut(), &user_line)?;
     expect_ok(stream.as_mut())?;
-    write_command(stream.as_mut(), format!("PASS {password}").as_bytes())?;
+    write_line(stream.as_mut(), &pass_line)?;
     expect_ok(stream.as_mut()).map_err(|_| SyncError::Authentication)?;
     write_command(stream.as_mut(), b"STAT")?;
     expect_ok(stream.as_mut())?;
@@ -226,11 +232,11 @@ pub fn sync_pop3_with_control(
     {
         if !remote_ordinals.contains_key(uidl.as_str()) {
             store
-                .set_receive_state(account, &uidl, "RemoteDeletionCommitted")
+                .set_receive_state(account, &uidl, ReceiveState::RemoteDeletionCommitted)
                 .map_err(|_| SyncError::Store)?;
-        } else if state == "DeleteMarkedSession" {
+        } else if state == ReceiveState::DeleteMarkedSession {
             store
-                .set_receive_state(account, &uidl, "DeletePending")
+                .set_receive_state(account, &uidl, ReceiveState::DeletePending)
                 .map_err(|_| SyncError::Store)?;
         }
     }
@@ -246,36 +252,31 @@ pub fn sync_pop3_with_control(
             .message_by_uidl(account, &entry.uidl)
             .map_err(|_| SyncError::Store)?
         {
-            if existing.receive_state == "DeletePending" {
-                write_command(
-                    stream.as_mut(),
-                    format!("DELE {}", entry.ordinal).as_bytes(),
-                )?;
+            if existing.state == StoredMessageState::Receive(ReceiveState::DeletePending) {
+                let dele_line =
+                    pop3::dele_command(entry.ordinal).map_err(|_| SyncError::Protocol)?;
+                write_line(stream.as_mut(), &dele_line)?;
                 expect_ok(stream.as_mut())?;
                 store
-                    .set_receive_state(account, &entry.uidl, "DeleteMarkedSession")
+                    .set_receive_state(account, &entry.uidl, ReceiveState::DeleteMarkedSession)
                     .map_err(|_| SyncError::Store)?;
             }
             continue;
         }
-        write_command(
-            stream.as_mut(),
-            format!("TOP {} 0", entry.ordinal).as_bytes(),
-        )?;
+        let top_line = pop3::top_command(entry.ordinal).map_err(|_| SyncError::Protocol)?;
+        write_line(stream.as_mut(), &top_line)?;
         let (entity, complete) = if read_status(stream.as_mut())? {
             (unstuff(read_multiline(stream.as_mut())?), false)
         } else {
-            write_command(
-                stream.as_mut(),
-                format!("RETR {}", entry.ordinal).as_bytes(),
-            )?;
+            let retr_line = pop3::retr_command(entry.ordinal).map_err(|_| SyncError::Protocol)?;
+            write_line(stream.as_mut(), &retr_line)?;
             expect_ok(stream.as_mut())?;
             (unstuff(read_multiline(stream.as_mut())?), true)
         };
         let state = if complete {
-            "BodyCached"
+            ReceiveState::BodyCached
         } else {
-            "HeaderCached"
+            ReceiveState::HeaderCached
         };
         store
             .save_message(
@@ -286,8 +287,8 @@ pub fn sync_pop3_with_control(
                 &entity,
             )
             .map_err(|_| SyncError::Store)?;
-        report.headers_cached += usize::from(state == "HeaderCached");
-        report.bodies_cached += usize::from(state == "BodyCached");
+        report.headers_cached += usize::from(state == ReceiveState::HeaderCached);
+        report.bodies_cached += usize::from(state == ReceiveState::BodyCached);
     }
     write_command(stream.as_mut(), b"QUIT")?;
     expect_ok(stream.as_mut())?;
@@ -295,9 +296,9 @@ pub fn sync_pop3_with_control(
         .deletion_states(account)
         .map_err(|_| SyncError::Store)?
     {
-        if state == "DeleteMarkedSession" {
+        if state == ReceiveState::DeleteMarkedSession {
             store
-                .set_receive_state(account, &uidl, "RemoteDeletionCommitted")
+                .set_receive_state(account, &uidl, ReceiveState::RemoteDeletionCommitted)
                 .map_err(|_| SyncError::Store)?;
         }
     }
@@ -327,18 +328,15 @@ pub fn fetch_pop3_body_with_control(
     control: OperationControl,
 ) -> Result<(), SyncError> {
     control.check()?;
-    if username.bytes().any(|b| !(0x20..=0x7e).contains(&b))
-        || password.bytes().any(|b| !(0x20..=0x7e).contains(&b))
-    {
-        return Err(SyncError::Authentication);
-    }
+    let user_line = pop3::user_command(username).map_err(|_| SyncError::Authentication)?;
+    let pass_line = pop3::pass_command(password).map_err(|_| SyncError::Authentication)?;
     let mut stream = transport
         .open(i2pr_mail_domain::MailService::Pop3, control.clone())
         .map_err(map_sync_transport)?;
     expect_ok(stream.as_mut())?;
-    write_command(stream.as_mut(), format!("USER {username}").as_bytes())?;
+    write_line(stream.as_mut(), &user_line)?;
     expect_ok(stream.as_mut())?;
-    write_command(stream.as_mut(), format!("PASS {password}").as_bytes())?;
+    write_line(stream.as_mut(), &pass_line)?;
     expect_ok(stream.as_mut()).map_err(|_| SyncError::Authentication)?;
     write_command(stream.as_mut(), b"UIDL")?;
     expect_ok(stream.as_mut())?;
@@ -350,7 +348,8 @@ pub fn fetch_pop3_body_with_control(
         .find(|entry| entry.uidl == uidl)
         .map(|entry| entry.ordinal)
         .ok_or(SyncError::Protocol)?;
-    write_command(stream.as_mut(), format!("RETR {ordinal}").as_bytes())?;
+    let retr_line = pop3::retr_command(ordinal).map_err(|_| SyncError::Protocol)?;
+    write_line(stream.as_mut(), &retr_line)?;
     expect_ok(stream.as_mut())?;
     let raw = unstuff(read_multiline(stream.as_mut())?);
     let existing = store
@@ -358,7 +357,13 @@ pub fn fetch_pop3_body_with_control(
         .map_err(|_| SyncError::Store)?
         .ok_or(SyncError::Store)?;
     store
-        .save_message(&existing.id, account, Some(uidl), "BodyCached", &raw)
+        .save_message(
+            &existing.id,
+            account,
+            Some(uidl),
+            ReceiveState::BodyCached,
+            &raw,
+        )
         .map_err(|_| SyncError::Store)?;
     write_command(stream.as_mut(), b"QUIT")?;
     expect_ok(stream.as_mut())?;
@@ -418,6 +423,15 @@ fn smtp_command(
 ) -> Result<i2pr_mail_proto::smtp::SmtpReply, SubmitError> {
     stream.write_all(command).map_err(map_submit_transport)?;
     stream.write_all(b"\r\n").map_err(map_submit_transport)?;
+    smtp_reply(stream)
+}
+
+/// Sends a line the protocol crate already bounded and CRLF-terminated.
+fn smtp_line(
+    stream: &mut dyn ByteStream,
+    line: &[u8],
+) -> Result<i2pr_mail_proto::smtp::SmtpReply, SubmitError> {
+    stream.write_all(line).map_err(map_submit_transport)?;
     smtp_reply(stream)
 }
 fn map_submit_transport(error: TransportError) -> SubmitError {
@@ -487,14 +501,21 @@ pub fn submit_smtp(
     if recipients.is_empty() {
         return Err(SubmitError::RecipientRejected);
     }
-    if [from, username, password]
+    // Credentials and every envelope line are bounded against the frozen SMTP
+    // ceilings before a stream is opened, a command buffer is formatted, or a
+    // single base64 byte is produced.
+    smtp::validate_username(username).map_err(|_| SubmitError::Authentication)?;
+    smtp::validate_password(password).map_err(|_| SubmitError::Authentication)?;
+    let mail_from_line = smtp::mail_from_command(from).map_err(|_| SubmitError::Authentication)?;
+    let recipient_lines = recipients
         .iter()
-        .any(|s| s.bytes().any(|b| !(0x20..=0x7e).contains(&b)))
-        || recipients
-            .iter()
-            .any(|(a, _)| a.bytes().any(|b| !(0x21..=0x7e).contains(&b)))
-    {
-        return Err(SubmitError::Authentication);
+        .map(|(address, _)| smtp::rcpt_to_command(address))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| SubmitError::RecipientRejected)?;
+    for len in [username.len(), password.len()] {
+        if smtp::expanded_auth_line_len(len) > smtp::MAX_AUTH_LINE {
+            return Err(SubmitError::Authentication);
+        }
     }
     store
         .queue_outbox_full(outbox_id, from, raw, recipients)
@@ -521,7 +542,11 @@ pub fn submit_smtp(
     }
     if size_limit.is_some_and(|n| raw.len() > n) {
         let _ = store.claim_outbox(outbox_id);
-        let _ = store.set_outbox_stage(outbox_id, 0, "FailedSafeToRetry");
+        let _ = store.set_outbox_stage(
+            outbox_id,
+            SubmissionProgress::NotStarted,
+            SubmissionState::FailedSafeToRetry,
+        );
         return Err(SubmitError::SizeLimit);
     }
     if !auth_login {
@@ -532,10 +557,16 @@ pub fn submit_smtp(
     }
     use base64::Engine;
     let encoded_user = base64::engine::general_purpose::STANDARD.encode(username.as_bytes());
+    if encoded_user.len() > smtp::MAX_AUTH_LINE {
+        return Err(SubmitError::Authentication);
+    }
     if smtp_command(stream.as_mut(), encoded_user.as_bytes())?.code != 334 {
         return Err(SubmitError::Authentication);
     }
     let encoded_password = base64::engine::general_purpose::STANDARD.encode(password.as_bytes());
+    if encoded_password.len() > smtp::MAX_AUTH_LINE {
+        return Err(SubmitError::Authentication);
+    }
     if smtp_command(stream.as_mut(), encoded_password.as_bytes())?.code != 235 {
         return Err(SubmitError::Authentication);
     }
@@ -545,18 +576,21 @@ pub fn submit_smtp(
     {
         return Err(SubmitError::OutboxOwned);
     }
-    let mail_from = format!("MAIL FROM:<{from}>");
-    if smtp_command(stream.as_mut(), mail_from.as_bytes())?.code != 250 {
-        let _ = store.set_outbox_stage(outbox_id, 0, "FailedSafeToRetry");
+    if smtp_line(stream.as_mut(), &mail_from_line)?.code != 250 {
+        let _ = store.set_outbox_stage(
+            outbox_id,
+            SubmissionProgress::NotStarted,
+            SubmissionState::FailedSafeToRetry,
+        );
         return Err(SubmitError::Protocol);
     }
-    for (recipient, _) in recipients {
-        let command = format!("RCPT TO:<{recipient}>");
-        if !matches!(
-            smtp_command(stream.as_mut(), command.as_bytes())?.code,
-            250 | 251
-        ) {
-            let _ = store.set_outbox_stage(outbox_id, 0, "FailedSafeToRetry");
+    for command in &recipient_lines {
+        if !matches!(smtp_line(stream.as_mut(), command)?.code, 250 | 251) {
+            let _ = store.set_outbox_stage(
+                outbox_id,
+                SubmissionProgress::NotStarted,
+                SubmissionState::FailedSafeToRetry,
+            );
             return Err(SubmitError::RecipientRejected);
         }
     }
@@ -565,27 +599,48 @@ pub fn submit_smtp(
         _ => SubmitError::Timeout,
     })?;
     if smtp_command(stream.as_mut(), b"DATA")?.code != 354 {
-        let _ = store.set_outbox_stage(outbox_id, 0, "FailedSafeToRetry");
+        let _ = store.set_outbox_stage(
+            outbox_id,
+            SubmissionProgress::NotStarted,
+            SubmissionState::FailedSafeToRetry,
+        );
         return Err(SubmitError::Protocol);
     }
+    // Durable progress is recorded before any DATA byte is written.
     store
-        .set_outbox_stage(outbox_id, 1, "Submitting")
+        .set_outbox_stage(
+            outbox_id,
+            SubmissionProgress::DataMayHaveStarted,
+            SubmissionState::Submitting,
+        )
         .map_err(|_| SubmitError::Store)?;
     let data = dot_stuff(raw);
     if let Err(error) = stream.write_all(&data) {
-        let _ = store.set_outbox_stage(outbox_id, 1, "DeliveryUnknown");
+        let _ = store.set_outbox_stage(
+            outbox_id,
+            SubmissionProgress::DataMayHaveStarted,
+            SubmissionState::DeliveryUnknown,
+        );
         return Err(map_submit_transport(error));
     }
     let accepted = match smtp_reply(stream.as_mut()) {
         Ok(reply) => reply.code == 250,
         Err(error) => {
-            let _ = store.set_outbox_stage(outbox_id, 1, "DeliveryUnknown");
+            let _ = store.set_outbox_stage(
+                outbox_id,
+                SubmissionProgress::DataMayHaveStarted,
+                SubmissionState::DeliveryUnknown,
+            );
             return Err(error);
         }
     };
     if !accepted {
         store
-            .set_outbox_stage(outbox_id, 0, "FailedSafeToRetry")
+            .set_outbox_stage(
+                outbox_id,
+                SubmissionProgress::NotStarted,
+                SubmissionState::FailedSafeToRetry,
+            )
             .map_err(|_| SubmitError::Store)?;
         return Err(SubmitError::Protocol);
     }
@@ -602,7 +657,66 @@ pub fn submit_smtp(
 pub const MAX_ACTIVE_CONTENT_HANDLES: usize = 32;
 pub const MAX_CONTENT_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_CONTENT_READ: usize = 64 * 1024;
-pub const MAX_SESSION_REQUESTS: usize = 4096;
+/// Ceiling on requests a caller may hold in flight at once. This is a genuinely
+/// live resource ceiling, so exhausting it is the only request-history condition
+/// that may report `Capacity`.
+pub const MAX_ACTIVE_REQUESTS: usize = 256;
+/// Size of the recent-completion deduplication window. Reaching it evicts the
+/// oldest completions in a deterministic order rather than failing, because no
+/// durable cross-session idempotency contract is claimed.
+pub const MAX_RECENT_COMPLETED_REQUESTS: usize = 1024;
+
+/// Bounded request-ID ledger. Ownership is split between requests that are
+/// currently in flight and a fixed-size window of recently completed requests, so
+/// a long-lived service cannot permanently exhaust request capacity.
+#[derive(Debug, Default)]
+struct RequestLedger {
+    active: std::collections::HashSet<RequestId>,
+    completed: std::collections::VecDeque<RequestId>,
+    completed_ids: std::collections::HashSet<RequestId>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum LedgerError {
+    Duplicate,
+    Capacity,
+}
+
+impl RequestLedger {
+    fn begin(&mut self, id: &RequestId) -> Result<(), LedgerError> {
+        if self.active.contains(id) || self.completed_ids.contains(id) {
+            return Err(LedgerError::Duplicate);
+        }
+        if self.active.len() >= MAX_ACTIVE_REQUESTS {
+            return Err(LedgerError::Capacity);
+        }
+        self.active.insert(id.clone());
+        Ok(())
+    }
+
+    /// Releases active ownership and retains the id for deduplication. Must be
+    /// called on every terminal path, including validation, credential, transport,
+    /// store, cancellation, and timeout failures.
+    fn end(&mut self, id: &RequestId) {
+        self.active.remove(id);
+        if self.completed_ids.insert(id.clone()) {
+            self.completed.push_back(id.clone());
+            while self.completed.len() > MAX_RECENT_COMPLETED_REQUESTS {
+                if let Some(evicted) = self.completed.pop_front() {
+                    self.completed_ids.remove(&evicted);
+                }
+            }
+        }
+    }
+
+    fn active_len(&self) -> usize {
+        self.active.len()
+    }
+
+    fn completed_len(&self) -> usize {
+        self.completed.len()
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RequestId(String);
@@ -657,19 +771,23 @@ pub enum BackendError {
 pub struct MessageSummary {
     pub id: String,
     pub uidl: Option<String>,
-    pub state: String,
+    pub state: StoredMessageState,
     pub locally_deleted: bool,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackendHealth {
     pub ready: bool,
     pub active_content_handles: usize,
+    /// Requests currently in flight. Returns to zero after every terminal path.
+    pub active_requests: usize,
+    /// Request ids retained in the bounded recent-completion window.
+    pub retained_request_ids: usize,
     pub schema_version: i64,
 }
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct OutboxStatus {
-    pub state: String,
-    pub stage: i64,
+    pub state: SubmissionState,
+    pub progress: SubmissionProgress,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeliveryResolution {
@@ -705,7 +823,7 @@ pub struct BackendService {
     handles: std::collections::HashMap<ContentHandle, Vec<u8>>,
     content_bytes: usize,
     next_handle: u64,
-    seen_requests: std::collections::HashSet<RequestId>,
+    requests: RequestLedger,
 }
 impl BackendService {
     pub fn open(
@@ -727,7 +845,7 @@ impl BackendService {
             handles: Default::default(),
             content_bytes: 0,
             next_handle: 1,
-            seen_requests: Default::default(),
+            requests: RequestLedger::default(),
         })
     }
     pub fn sync(
@@ -760,17 +878,17 @@ impl BackendService {
             Ok(report) => BackendEventKind::SyncFinished(report.clone()),
             Err(e) => BackendEventKind::Failed(e.clone()),
         };
-        OperationResult {
-            request_id: request_id.clone(),
-            value: result,
-            events: vec![
+        self.terminal(
+            request_id.clone(),
+            result,
+            vec![
                 start,
                 BackendEvent {
                     request_id,
                     kind: final_kind,
                 },
             ],
-        }
+        )
     }
     pub fn service_profile(&self) -> i2pr_mail_domain::ServiceProfile {
         i2pr_mail_domain::ServiceProfile::default()
@@ -785,6 +903,8 @@ impl BackendService {
             .map(|schema_version| BackendHealth {
                 ready: true,
                 active_content_handles: self.handles.len(),
+                active_requests: self.requests.active_len(),
+                retained_request_ids: self.requests.completed_len(),
                 schema_version,
             })
             .map_err(|_| BackendError::Store);
@@ -803,7 +923,7 @@ impl BackendService {
             .outbox_state(outbox_id)
             .map_err(|_| BackendError::Store)
             .and_then(|v| {
-                v.map(|(state, stage)| OutboxStatus { state, stage })
+                v.map(|(state, progress)| OutboxStatus { state, progress })
                     .ok_or(BackendError::NotFound)
             });
         self.result(request_id, result)
@@ -847,7 +967,7 @@ impl BackendService {
                         Ok(MessageSummary {
                             id: m.id.clone(),
                             uidl: m.uidl,
-                            state: m.receive_state,
+                            state: m.state,
                             locally_deleted: self.store.is_locally_deleted(&m.id)?,
                         })
                     })
@@ -1011,7 +1131,7 @@ impl BackendService {
                 .outbox_state(outbox_id)
                 .map_err(|_| BackendError::Store)?
                 .ok_or(BackendError::NotFound)?;
-            if state.0 == "DeliveryUnknown" {
+            if state.0 == SubmissionState::DeliveryUnknown {
                 return Err(BackendError::DeliveryUnknown);
             }
             let from = self
@@ -1098,8 +1218,23 @@ impl BackendService {
         self.handles.clear();
         self.content_bytes = 0;
     }
+    /// Terminal path for every request: releases active ownership and enters the
+    /// bounded recent-completion window, whatever the outcome was.
+    fn terminal<T>(
+        &mut self,
+        request_id: RequestId,
+        result: Result<T, BackendError>,
+        events: Vec<BackendEvent>,
+    ) -> OperationResult<T> {
+        self.requests.end(&request_id);
+        OperationResult {
+            request_id,
+            value: result,
+            events,
+        }
+    }
     fn result<T>(
-        &self,
+        &mut self,
         request_id: RequestId,
         result: Result<T, BackendError>,
     ) -> OperationResult<T> {
@@ -1107,24 +1242,17 @@ impl BackendService {
             Ok(_) => BackendEventKind::Completed,
             Err(e) => BackendEventKind::Failed(e.clone()),
         };
-        OperationResult {
-            events: vec![BackendEvent {
-                request_id: request_id.clone(),
-                kind,
-            }],
-            request_id,
-            value: result,
-        }
+        self.terminal(
+            request_id.clone(),
+            result,
+            vec![BackendEvent { request_id, kind }],
+        )
     }
     fn begin_request(&mut self, id: &RequestId) -> Result<(), BackendError> {
-        if self.seen_requests.contains(id) {
-            return Err(BackendError::InvalidRequest);
-        }
-        if self.seen_requests.len() >= MAX_SESSION_REQUESTS {
-            return Err(BackendError::Capacity);
-        }
-        self.seen_requests.insert(id.clone());
-        Ok(())
+        self.requests.begin(id).map_err(|error| match error {
+            LedgerError::Duplicate => BackendError::InvalidRequest,
+            LedgerError::Capacity => BackendError::Capacity,
+        })
     }
 }
 fn map_sync_backend(e: SyncError) -> BackendError {
@@ -1238,7 +1366,10 @@ mod tests {
             .message_by_uidl("account", "../uidl")
             .unwrap()
             .unwrap();
-        assert_eq!(stored.receive_state, "HeaderCached");
+        assert_eq!(
+            stored.state,
+            StoredMessageState::Receive(ReceiveState::HeaderCached)
+        );
         assert_eq!(
             store.raw_for_message(&stored.id).unwrap().unwrap(),
             b"Subject: hello\r\nFrom: a@i2p\r\n\r\n"
@@ -1264,7 +1395,10 @@ mod tests {
         let mut store = i2pr_mail_store::Store::open(dir.path()).unwrap();
         sync_pop3(&transport, &mut store, "a", "u", "p").unwrap();
         let item = store.message_by_uidl("a", "uidl").unwrap().unwrap();
-        assert_eq!(item.receive_state, "BodyCached");
+        assert_eq!(
+            item.state,
+            StoredMessageState::Receive(ReceiveState::BodyCached)
+        );
         assert_eq!(
             store.raw_for_message(&item.id).unwrap().unwrap(),
             b"Subject: fallback\r\n\r\nbody\r\n"
@@ -1295,7 +1429,7 @@ mod tests {
                 "local",
                 "account",
                 Some("opaque"),
-                "HeaderCached",
+                ReceiveState::HeaderCached,
                 b"Subject: x\r\n\r\n",
             )
             .unwrap();
@@ -1306,8 +1440,8 @@ mod tests {
                 .message_by_uidl("account", "opaque")
                 .unwrap()
                 .unwrap()
-                .receive_state,
-            "RemoteDeletionCommitted"
+                .state,
+            StoredMessageState::Receive(ReceiveState::RemoteDeletionCommitted)
         );
         let sent = String::from_utf8(transport.output.lock().unwrap().clone()).unwrap();
         assert!(sent.contains("DELE 1\r\n"));
@@ -1333,7 +1467,7 @@ mod tests {
                 "local",
                 "account",
                 Some("gone"),
-                "HeaderCached",
+                ReceiveState::HeaderCached,
                 b"Subject: x\r\n\r\n",
             )
             .unwrap();
@@ -1344,8 +1478,8 @@ mod tests {
                 .message_by_uidl("account", "gone")
                 .unwrap()
                 .unwrap()
-                .receive_state,
-            "RemoteDeletionCommitted"
+                .state,
+            StoredMessageState::Receive(ReceiveState::RemoteDeletionCommitted)
         );
     }
 
@@ -1368,7 +1502,7 @@ mod tests {
                 "local",
                 "account",
                 Some("opaque"),
-                "HeaderCached",
+                ReceiveState::HeaderCached,
                 b"Subject: x\r\n\r\n",
             )
             .unwrap();
@@ -1382,8 +1516,8 @@ mod tests {
                 .message_by_uidl("account", "opaque")
                 .unwrap()
                 .unwrap()
-                .receive_state,
-            "DeleteMarkedSession"
+                .state,
+            StoredMessageState::Receive(ReceiveState::DeleteMarkedSession)
         );
     }
 
@@ -1406,7 +1540,7 @@ mod tests {
                 "local",
                 "account",
                 Some("opaque"),
-                "HeaderCached",
+                ReceiveState::HeaderCached,
                 b"Subject: hello\r\n\r\n",
             )
             .unwrap();
@@ -1415,7 +1549,10 @@ mod tests {
         )
         .unwrap();
         let item = store.message_by_uidl("account", "opaque").unwrap().unwrap();
-        assert_eq!(item.receive_state, "BodyCached");
+        assert_eq!(
+            item.state,
+            StoredMessageState::Receive(ReceiveState::BodyCached)
+        );
         assert_eq!(
             store.raw_for_message(&item.id).unwrap().unwrap(),
             b"Subject: hello\r\n\r\nfull body\r\n"
@@ -1529,7 +1666,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             store.outbox_state("out-1").unwrap(),
-            Some(("Sent".into(), 2))
+            Some((SubmissionState::Sent, SubmissionProgress::DeliveryAccepted))
         );
         assert_eq!(store.outbox_recipients("out-1").unwrap(), recipients);
         assert_eq!(
@@ -1579,7 +1716,10 @@ mod tests {
         );
         assert_eq!(
             store.outbox_state("out-2").unwrap(),
-            Some(("DeliveryUnknown".into(), 1))
+            Some((
+                SubmissionState::DeliveryUnknown,
+                SubmissionProgress::DataMayHaveStarted
+            ))
         );
         assert!(!store.claim_outbox("out-2").unwrap());
         assert_eq!(store.recover_submitting().unwrap(), 0);
@@ -1618,7 +1758,10 @@ mod tests {
         assert_eq!(result, Err(SubmitError::SizeLimit));
         assert_eq!(
             store.outbox_state("size").unwrap(),
-            Some(("FailedSafeToRetry".into(), 0))
+            Some((
+                SubmissionState::FailedSafeToRetry,
+                SubmissionProgress::NotStarted
+            ))
         );
         assert!(
             !String::from_utf8(output.lock().unwrap().clone())
@@ -1659,13 +1802,318 @@ mod tests {
         assert_eq!(result, Err(SubmitError::RecipientRejected));
         assert_eq!(
             store.outbox_state("reject").unwrap(),
-            Some(("FailedSafeToRetry".into(), 0))
+            Some((
+                SubmissionState::FailedSafeToRetry,
+                SubmissionProgress::NotStarted
+            ))
         );
         assert!(
             !String::from_utf8(output.lock().unwrap().clone())
                 .unwrap()
                 .contains("DATA\r\n")
         );
+    }
+
+    struct FailingCredentials;
+    impl CredentialSource for FailingCredentials {
+        fn credentials(
+            &self,
+            _: &str,
+            _: i2pr_mail_domain::MailService,
+        ) -> Result<Credentials, BackendError> {
+            Err(BackendError::Authentication)
+        }
+    }
+
+    fn pop3_script(
+        transcript: &[u8],
+        output: Arc<Mutex<Vec<u8>>>,
+    ) -> (i2pr_mail_domain::MailService, Script) {
+        (
+            i2pr_mail_domain::MailService::Pop3,
+            Script {
+                input: std::io::Cursor::new(transcript.to_vec()),
+                output,
+            },
+        )
+    }
+
+    fn smtp_script(
+        transcript: &[u8],
+        output: Arc<Mutex<Vec<u8>>>,
+    ) -> (i2pr_mail_domain::MailService, Script) {
+        (
+            i2pr_mail_domain::MailService::Smtp,
+            Script {
+                input: std::io::Cursor::new(transcript.to_vec()),
+                output,
+            },
+        )
+    }
+
+    #[test]
+    fn request_ledger_rejects_duplicates_and_bounds_only_live_capacity() {
+        let mut ledger = RequestLedger::default();
+        let id = RequestId::new("req-1").unwrap();
+        assert_eq!(ledger.begin(&id), Ok(()));
+        // A duplicate while the request is still active is rejected.
+        assert_eq!(ledger.begin(&id), Err(LedgerError::Duplicate));
+        ledger.end(&id);
+        assert_eq!(ledger.active_len(), 0);
+        // A duplicate inside the recent-completion window is still rejected.
+        assert_eq!(ledger.begin(&id), Err(LedgerError::Duplicate));
+        assert_eq!(ledger.completed_len(), 1);
+
+        // In-flight ownership is a genuinely live ceiling.
+        let mut active = Vec::new();
+        for n in 0..MAX_ACTIVE_REQUESTS {
+            let next = RequestId::new(format!("active-{n}")).unwrap();
+            assert_eq!(ledger.begin(&next), Ok(()));
+            active.push(next);
+        }
+        assert_eq!(
+            ledger.begin(&RequestId::new("overflow").unwrap()),
+            Err(LedgerError::Capacity)
+        );
+        for id in &active {
+            ledger.end(id);
+        }
+        assert_eq!(ledger.active_len(), 0);
+    }
+
+    #[test]
+    fn recent_completion_window_evicts_instead_of_failing() {
+        let mut ledger = RequestLedger::default();
+        let total = MAX_RECENT_COMPLETED_REQUESTS * 2 + 17;
+        for n in 0..total {
+            let id = RequestId::new(format!("req-{n}")).unwrap();
+            ledger.begin(&id).unwrap();
+            ledger.end(&id);
+        }
+        // Retention stays bounded rather than growing with service lifetime.
+        assert_eq!(ledger.active_len(), 0);
+        assert_eq!(ledger.completed_len(), MAX_RECENT_COMPLETED_REQUESTS);
+        // An evicted id may be reused because no durable idempotency is claimed.
+        assert_eq!(
+            ledger.begin(&RequestId::new("req-0").unwrap()),
+            Ok(()),
+            "oldest completion should have been evicted"
+        );
+        // The most recent completion is still deduplicated.
+        assert_eq!(
+            ledger.begin(&RequestId::new(format!("req-{}", total - 1)).unwrap()),
+            Err(LedgerError::Duplicate)
+        );
+    }
+
+    #[test]
+    fn sustained_backend_use_recovers_request_capacity_without_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let offline = Arc::new(QueueTransport(Mutex::new(Default::default())));
+        let mut service = BackendService::open(dir.path(), "account", offline).unwrap();
+        let total = MAX_RECENT_COMPLETED_REQUESTS * 2 + 17;
+        for n in 0..total {
+            let outcome = service.health(RequestId::new(format!("req-{n}")).unwrap());
+            assert!(
+                outcome.value.is_ok(),
+                "request {n} of {total} must not exhaust request capacity"
+            );
+        }
+        let health = service
+            .health(RequestId::new("sustained-final").unwrap())
+            .value
+            .unwrap();
+        // Only the in-flight probe itself is active; nothing leaked.
+        assert_eq!(health.active_requests, 1);
+        assert_eq!(health.retained_request_ids, MAX_RECENT_COMPLETED_REQUESTS);
+        // An id evicted long ago is reusable.
+        assert!(
+            service
+                .health(RequestId::new("req-0").unwrap())
+                .value
+                .is_ok()
+        );
+        // A recent completion is still deduplicated.
+        assert_eq!(
+            service
+                .health(RequestId::new("sustained-final").unwrap())
+                .value,
+            Err(BackendError::InvalidRequest)
+        );
+        let newest = RequestId::new(format!("req-{}", total - 1)).unwrap();
+        assert_eq!(
+            service.health(newest).value,
+            Err(BackendError::InvalidRequest)
+        );
+    }
+
+    #[test]
+    fn failing_and_cancelled_requests_release_active_ownership() {
+        let dir = tempfile::tempdir().unwrap();
+        let offline = Arc::new(QueueTransport(Mutex::new(Default::default())));
+        let mut service = BackendService::open(dir.path(), "account", offline).unwrap();
+        for n in 0..MAX_ACTIVE_REQUESTS * 2 {
+            assert_eq!(
+                service
+                    .open_message(RequestId::new(format!("fail-{n}")).unwrap(), "missing")
+                    .value,
+                Err(BackendError::NotFound)
+            );
+        }
+        // Credential failure, cancellation, and an unknown outbox row all terminate.
+        let cancelled = OperationControl::new(std::time::Duration::from_secs(60));
+        cancelled.cancel();
+        assert_eq!(
+            service
+                .sync(
+                    RequestId::new("cancelled-sync").unwrap(),
+                    &TestCredentials,
+                    cancelled
+                )
+                .value,
+            Err(BackendError::Cancelled)
+        );
+        assert_eq!(
+            service
+                .sync(
+                    RequestId::new("credential-sync").unwrap(),
+                    &FailingCredentials,
+                    OperationControl::new(std::time::Duration::from_secs(60))
+                )
+                .value,
+            Err(BackendError::Authentication)
+        );
+        assert_eq!(
+            service
+                .send_queued(
+                    RequestId::new("missing-outbox").unwrap(),
+                    "no-such-outbox",
+                    &TestCredentials,
+                    OperationControl::new(std::time::Duration::from_secs(60))
+                )
+                .value,
+            Err(BackendError::NotFound)
+        );
+        let health = service
+            .health(RequestId::new("leak-probe").unwrap())
+            .value
+            .unwrap();
+        assert_eq!(
+            health.active_requests, 1,
+            "terminal paths must release ownership"
+        );
+        // Retained history stays bounded no matter how many requests failed.
+        assert!(health.retained_request_ids <= MAX_RECENT_COMPLETED_REQUESTS);
+    }
+
+    #[test]
+    fn pop3_credential_ceilings_reject_before_any_command_is_written() {
+        let output = Arc::new(Mutex::new(Vec::new()));
+        let transcript = b"+OK ready\r\n-ERR no cap\r\n".to_vec();
+        let transport = QueueTransport(Mutex::new(std::collections::VecDeque::from([
+            pop3_script(&transcript, output.clone()),
+            pop3_script(&transcript, output.clone()),
+        ])));
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = i2pr_mail_store::Store::open(dir.path()).unwrap();
+        let long_user = "a".repeat(pop3::MAX_USER_LEN + 1);
+        let long_pass = "b".repeat(pop3::MAX_PASS_LEN + 1);
+        assert_eq!(
+            sync_pop3(&transport, &mut store, "account", &long_user, "secret"),
+            Err(SyncError::Authentication)
+        );
+        assert_eq!(
+            sync_pop3(&transport, &mut store, "account", "alice", &long_pass),
+            Err(SyncError::Authentication)
+        );
+        let sent = String::from_utf8(output.lock().unwrap().clone()).unwrap();
+        assert!(!sent.contains("USER"), "no USER may be formatted: {sent:?}");
+        assert!(!sent.contains("PASS"), "no PASS may be formatted: {sent:?}");
+        assert!(!sent.contains(&long_user), "credential must not be echoed");
+        assert!(!sent.contains(&long_pass), "credential must not be echoed");
+        // A credential exactly at the ceiling is still accepted.
+        let at_limit = "a".repeat(pop3::MAX_USER_LEN);
+        assert_eq!(
+            pop3::user_command(&at_limit).unwrap(),
+            format!("USER {at_limit}\r\n").into_bytes()
+        );
+    }
+
+    #[test]
+    fn smtp_credential_and_envelope_ceilings_reject_before_queue_or_io() {
+        let output = Arc::new(Mutex::new(Vec::new()));
+        let transport = QueueTransport(Mutex::new(std::collections::VecDeque::from([
+            smtp_script(b"220 ready\r\n", output.clone()),
+            smtp_script(b"220 ready\r\n", output.clone()),
+            smtp_script(b"220 ready\r\n", output.clone()),
+        ])));
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = i2pr_mail_store::Store::open(dir.path()).unwrap();
+        let recipients = vec![("to@postman.i2p".to_owned(), "To".to_owned())];
+        let submit = |store: &mut i2pr_mail_store::Store,
+                      outbox: &str,
+                      from: &str,
+                      username: &str,
+                      password: &str,
+                      recipients: &[(String, String)]| {
+            submit_smtp(
+                &transport,
+                store,
+                SmtpSubmission {
+                    account_id: "account",
+                    outbox_id: outbox,
+                    from,
+                    recipients,
+                    username,
+                    password,
+                    raw: b"Subject: x\r\n\r\nbody",
+                    control: OperationControl::new(std::time::Duration::from_secs(60)),
+                },
+            )
+        };
+        // An over-bound username is refused before encoding or queueing.
+        assert_eq!(
+            submit(
+                &mut store,
+                "over-user",
+                "from@postman.i2p",
+                &"u".repeat(smtp::MAX_CREDENTIAL_LEN + 1),
+                "p",
+                &recipients
+            ),
+            Err(SubmitError::Authentication)
+        );
+        assert!(store.outbox_state("over-user").unwrap().is_none());
+        // An over-bound recipient address cannot exceed the frozen envelope budget.
+        let over_recipient = vec![("a".repeat(smtp::MAX_ENVELOPE_LINE), "To".to_owned())];
+        assert_eq!(
+            submit(
+                &mut store,
+                "over-rcpt",
+                "from@postman.i2p",
+                "u",
+                "p",
+                &over_recipient
+            ),
+            Err(SubmitError::RecipientRejected)
+        );
+        assert!(store.outbox_state("over-rcpt").unwrap().is_none());
+        // An envelope address that would double-bracket is refused.
+        let bracketed = vec![("<second@postman.i2p".to_owned(), "To".to_owned())];
+        assert_eq!(
+            submit(
+                &mut store,
+                "bracket-rcpt",
+                "from@postman.i2p",
+                "u",
+                "p",
+                &bracketed
+            ),
+            Err(SubmitError::RecipientRejected)
+        );
+        assert!(store.outbox_state("bracket-rcpt").unwrap().is_none());
+        let sent = String::from_utf8(output.lock().unwrap().clone()).unwrap();
+        assert!(sent.is_empty(), "nothing may reach the stream: {sent:?}");
     }
 
     #[test]
@@ -1755,7 +2203,7 @@ mod tests {
                 .value
                 .unwrap()
                 .state,
-            "Sent"
+            SubmissionState::Sent
         );
         assert!(
             service
@@ -1772,7 +2220,7 @@ mod tests {
             .list_messages(RequestId::new("req-list-2").unwrap())
             .value
             .unwrap();
-        assert!(listed.iter().any(|m| m.state == "Sent"));
+        assert!(listed.iter().any(|m| m.state == StoredMessageState::Sent));
         let incoming_id = listed
             .iter()
             .find(|m| m.uidl.as_deref() == Some("opaque"))
@@ -1836,7 +2284,11 @@ mod tests {
                 .unwrap();
             store.claim_outbox("out-unknown").unwrap();
             store
-                .set_outbox_stage("out-unknown", 1, "Submitting")
+                .set_outbox_stage(
+                    "out-unknown",
+                    SubmissionProgress::DataMayHaveStarted,
+                    SubmissionState::Submitting,
+                )
                 .unwrap();
         }
         let offline = Arc::new(QueueTransport(Mutex::new(Default::default())));
@@ -1845,14 +2297,14 @@ mod tests {
             .list_messages(RequestId::new("req-offline").unwrap())
             .value
             .unwrap();
-        assert!(listed.iter().any(|m| m.state == "Sent"));
+        assert!(listed.iter().any(|m| m.state == StoredMessageState::Sent));
         assert_eq!(
             restarted
                 .inspect_outbox(RequestId::new("req-unknown").unwrap(), "out-unknown")
                 .value
                 .unwrap()
                 .state,
-            "DeliveryUnknown"
+            SubmissionState::DeliveryUnknown
         );
         assert_eq!(
             restarted
@@ -1882,7 +2334,7 @@ mod tests {
                 .value
                 .unwrap()
                 .state,
-            "FailedSafeToRetry"
+            SubmissionState::FailedSafeToRetry
         );
         let received = listed
             .iter()
@@ -1908,7 +2360,10 @@ mod tests {
                 .unwrap(),
             b"Subject: received\r\n\r\n"
         );
-        let sent = listed.iter().find(|m| m.state == "Sent").unwrap();
+        let sent = listed
+            .iter()
+            .find(|m| m.state == StoredMessageState::Sent)
+            .unwrap();
         let handle = restarted
             .open_message(RequestId::new("req-open-sent").unwrap(), &sent.id)
             .value

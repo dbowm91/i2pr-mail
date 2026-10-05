@@ -174,6 +174,133 @@ pub enum SubmissionState {
     Sent,
 }
 
+/// Durable progress marker for one submission attempt. Only `NotStarted` may be
+/// persisted together with a retry-safe state; ambiguity is represented by
+/// `DataMayHaveStarted`, which is never cleared without an explicit resolution.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SubmissionProgress {
+    NotStarted,
+    DataMayHaveStarted,
+    DeliveryAccepted,
+}
+
+/// Durable state of one stored message row: either a receive state for remotely
+/// reconciled mail, or the terminal `Sent` projection of a delivered submission.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StoredMessageState {
+    Receive(ReceiveState),
+    Sent,
+}
+
+impl ReceiveState {
+    pub const ALL: [Self; 6] = [
+        Self::RemoteKnown,
+        Self::HeaderCached,
+        Self::BodyCached,
+        Self::DeletePending,
+        Self::DeleteMarkedSession,
+        Self::RemoteDeletionCommitted,
+    ];
+    /// Canonical storage token. Storage encoding is owned here so persisted
+    /// vocabulary cannot drift from the Rust type.
+    pub fn as_storage_str(self) -> &'static str {
+        match self {
+            Self::RemoteKnown => "RemoteKnown",
+            Self::HeaderCached => "HeaderCached",
+            Self::BodyCached => "BodyCached",
+            Self::DeletePending => "DeletePending",
+            Self::DeleteMarkedSession => "DeleteMarkedSession",
+            Self::RemoteDeletionCommitted => "RemoteDeletionCommitted",
+        }
+    }
+    pub fn from_storage_str(value: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|state| state.as_storage_str() == value)
+    }
+}
+
+impl SubmissionState {
+    pub const ALL: [Self; 6] = [
+        Self::Draft,
+        Self::Queued,
+        Self::Submitting,
+        Self::FailedSafeToRetry,
+        Self::DeliveryUnknown,
+        Self::Sent,
+    ];
+    pub fn as_storage_str(self) -> &'static str {
+        match self {
+            Self::Draft => "Draft",
+            Self::Queued => "Queued",
+            Self::Submitting => "Submitting",
+            Self::FailedSafeToRetry => "FailedSafeToRetry",
+            Self::DeliveryUnknown => "DeliveryUnknown",
+            Self::Sent => "Sent",
+        }
+    }
+    pub fn from_storage_str(value: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|state| state.as_storage_str() == value)
+    }
+    /// The only progress markers that may be persisted with this state. Any other
+    /// pairing is an unrepresentable combination rather than a runtime decision.
+    pub fn allowed_progress(self) -> &'static [SubmissionProgress] {
+        use SubmissionProgress::{DataMayHaveStarted, DeliveryAccepted, NotStarted};
+        match self {
+            Self::Draft | Self::Queued | Self::FailedSafeToRetry => &[NotStarted],
+            Self::Submitting => &[NotStarted, DataMayHaveStarted],
+            Self::DeliveryUnknown => &[DataMayHaveStarted],
+            Self::Sent => &[DeliveryAccepted],
+        }
+    }
+    pub fn allows(self, progress: SubmissionProgress) -> bool {
+        self.allowed_progress().contains(&progress)
+    }
+}
+
+impl SubmissionProgress {
+    pub const ALL: [Self; 3] = [
+        Self::NotStarted,
+        Self::DataMayHaveStarted,
+        Self::DeliveryAccepted,
+    ];
+    pub fn as_storage_i64(self) -> i64 {
+        match self {
+            Self::NotStarted => 0,
+            Self::DataMayHaveStarted => 1,
+            Self::DeliveryAccepted => 2,
+        }
+    }
+    pub fn from_storage_i64(value: i64) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|progress| progress.as_storage_i64() == value)
+    }
+}
+
+impl StoredMessageState {
+    pub fn receive_state(self) -> Option<ReceiveState> {
+        match self {
+            Self::Receive(state) => Some(state),
+            Self::Sent => None,
+        }
+    }
+    pub fn as_storage_str(self) -> &'static str {
+        match self {
+            Self::Receive(state) => state.as_storage_str(),
+            Self::Sent => "Sent",
+        }
+    }
+    pub fn from_storage_str(value: &str) -> Option<Self> {
+        match value {
+            "Sent" => Some(Self::Sent),
+            _ => ReceiveState::from_storage_str(value).map(Self::Receive),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -218,5 +345,59 @@ mod tests {
             SubmissionState::DeliveryUnknown,
             SubmissionState::FailedSafeToRetry
         );
+    }
+
+    #[test]
+    fn storage_vocabulary_is_total_bounded_and_strict() {
+        for state in ReceiveState::ALL {
+            assert_eq!(
+                ReceiveState::from_storage_str(state.as_storage_str()),
+                Some(state)
+            );
+        }
+        for state in SubmissionState::ALL {
+            assert_eq!(
+                SubmissionState::from_storage_str(state.as_storage_str()),
+                Some(state)
+            );
+        }
+        for progress in SubmissionProgress::ALL {
+            assert_eq!(
+                SubmissionProgress::from_storage_i64(progress.as_storage_i64()),
+                Some(progress)
+            );
+        }
+        assert_eq!(ReceiveState::from_storage_str("Sent"), None);
+        assert_eq!(ReceiveState::from_storage_str(""), None);
+        assert_eq!(ReceiveState::from_storage_str("remoteknown"), None);
+        assert_eq!(SubmissionState::from_storage_str("Unknown"), None);
+        assert_eq!(SubmissionProgress::from_storage_i64(3), None);
+        assert_eq!(SubmissionProgress::from_storage_i64(-1), None);
+        assert_eq!(
+            StoredMessageState::from_storage_str("Sent"),
+            Some(StoredMessageState::Sent)
+        );
+        assert_eq!(StoredMessageState::Sent.receive_state(), None);
+    }
+
+    #[test]
+    fn submission_state_progress_combinations_are_representable_only() {
+        use SubmissionProgress::*;
+        for state in SubmissionState::ALL {
+            for progress in SubmissionProgress::ALL {
+                let represented = state.allows(progress);
+                assert_eq!(
+                    represented,
+                    state.allowed_progress().contains(&progress),
+                    "{state:?}/{progress:?}"
+                );
+            }
+        }
+        assert!(SubmissionState::DeliveryUnknown.allows(DataMayHaveStarted));
+        assert!(!SubmissionState::DeliveryUnknown.allows(NotStarted));
+        assert!(!SubmissionState::Sent.allows(DataMayHaveStarted));
+        assert!(SubmissionState::Submitting.allows(NotStarted));
+        assert!(!SubmissionState::Queued.allows(DataMayHaveStarted));
+        assert!(!SubmissionState::FailedSafeToRetry.allows(DeliveryAccepted));
     }
 }

@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 007 — Request, State, and Protocol Corrective
 
-Status: ready for handoff
+Status: closed
 
 Repository baseline: `e1db79b55e3fdd128b9dafe701b50c5dbf5db9c5` on `codex/foundation-planning`
 
