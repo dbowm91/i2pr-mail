@@ -203,9 +203,21 @@ Exact upstream commit/tag, app capability matrix, adapter mapping, POP3/SMTP int
 
 This plan is deliberately blocked. Do not implement against the known-pre-runtime Plan-345 shape merely to make progress; M001-M005 are the progress path until upstream stabilizes.
 
-### Current external dependency evidence (checked 2026-10-05)
+### Current external dependency evidence (re-audited 2026-10-05 during M009)
 
-The upstream i2pr registry at commit `bf257b2b20ecf81d3772181bb566b03cf29ca795` registers Plan 345 as a managed native app runtime contract/architecture foundation. It does not provide a production application gateway, managed app process lifecycle, or destination stream API for this adapter. The upstream README continues to describe i2pr as experimental. Therefore the adapter has no stable interface to target and remains blocked. Recheck the upstream registry and the accepted gateway API before starting implementation.
+The earlier Plan-345-only reading is superseded. The upstream i2pr branch `work/router-console-plans-356-358` at `f6036a9e` shows:
 
-- Registry: https://github.com/dbowm91/i2pr/blob/main/plans/registry.md (registry blob `b899c95159fad860e6970abec91d1f5253011fbc`)
+- Closure records exist for Plans 345, 349, 352, and 353 (`plans/closure/managed-native-app-runtime/`), so that line of the runtime has closed.
+- No closure record exists for Plan 354 or Plan 355.
+- The upstream registry row reads "Plans 345, 349, 352, 353 passed; 354 ready; 355 blocked", with Plan 354 owning listener-independent private SAM/I2CP connection drivers and Plan 355 owning the trusted app-principal router gateway hard-blocked on 354.
+- Plan 354's implementation plan exists and is ready; Plan 355's implementation plan exists and is blocked on 354.
+- The commit registering Plans 354 and 355 (`82080dbd`) is present on `work/router-console-plans-356-358` and on `work/plans-352-353`, but is **not** an ancestor of upstream `main`.
+
+Therefore the adapter still has no stable router gateway interface to target: the gateway is Plan 355, Plan 355 has not started, and Plan 355 is itself blocked on Plan 354. M006 remains blocked.
+
+M006's remaining local gate is i2pr-mail M007-M009 closure; M007 and M008 are closed and M009 is conditionally closed pending its hosted verification run.
+
+When Plan 355 does close, M006 must perform a fresh interface review against the closed contract before implementation rather than assuming the current draft shape. The seam it must implement above is frozen in `docs/architecture/transport-boundary.md`, including the rule that Plan 355 grants one logical service stream per operation rather than a pre-connected arbitrary destination byte stream, and the execution-model stop condition if the closed SDK is async-only.
+
+- Registry: https://github.com/dbowm91/i2pr/blob/main/plans/registry.md
 - Project readiness: https://github.com/dbowm91/i2pr

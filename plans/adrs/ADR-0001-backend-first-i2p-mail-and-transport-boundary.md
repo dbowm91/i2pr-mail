@@ -18,7 +18,7 @@ Affected roadmap:
 
 ## Context
 
-The project is intended to become a simple Susimail-like client for I2P in-network mail. The i2pr managed-native-app runtime is still being defined: its Plan-345 contract foundation exists, Plan 349 corrects pre-runtime direction/reply and broker semantics, and a router-side application transport gateway is not yet a stable downstream API.
+The project is intended to become a simple Susimail-like client for I2P in-network mail. The i2pr managed-native-app runtime is still being defined: its Plan-345 contract foundation exists, Plan 349 corrects pre-runtime direction/reply and broker semantics, and a router-side application transport gateway is not yet a stable downstream API. (Upstream status corrected 2026-10-05: Plans 345, 349, 352, and 353 have since closed, Plan 354 is ready, and the gateway this ADR lacks remains Plan 355, which is blocked on 354. The decision below is unchanged; only the dated observation of upstream state was stale.)
 
 Tying mail protocol/domain code directly to the current i2pr draft API would force churn into unrelated mail logic. Recreating conventional localhost POP3/SMTP tunnels would also conflict with the secured managed-app design, which denies direct loopback/network access.
 

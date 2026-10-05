@@ -25,20 +25,20 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 ready | M007-M008 are closed; M009 adds hosted verification and reconciles corrective closure. |
+| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 conditionally closed | M007-M008 closed; M009 awaits hosted run 37372987942 (GitHub Actions outage). |
 | Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective M009 ready; M006 blocked | M006 additionally requires M007–M009 closure and stable upstream i2pr Plan 355 app-principal gateway. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | active | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | M007-M008 are closed; hosted verification needs no external interface. |
+| Mail backend post-M005 corrective | none ready | — | — | M007-M008 are closed and M009 is conditionally closed; no corrective plan remains unblocked. |
 
 ## Active closure work
 
 | Subsystem | Milestone | Status | Plan | Note |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | closing | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow added; awaiting green hosted run on the corrective head. |
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | conditionally closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow landed and local verification is green. Hosted run 37372987942 is queued with no runner because GitHub Actions is in a major outage (incident "Incident with Actions", critical, investigating). Closure requires that run to conclude successfully. |
 
 ## Blocked work
 

@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 009 — Hosted Verification and Corrective Closure
 
-Status: active
+Status: conditionally closed
 
 Repository baseline: planning baseline `e1db79b55e3fdd128b9dafe701b50c5dbf5db9c5`; execute after M008 closure
 

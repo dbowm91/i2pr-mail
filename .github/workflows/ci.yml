@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   verify:
-    name: verify (ubuntu, stable-ish toolchain from rust-toolchain.toml)
+    name: verify (ubuntu, toolchain pinned by rust-toolchain.toml)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
