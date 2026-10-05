@@ -125,4 +125,4 @@ This addendum closes when M007-M009 have accepted closure records, no high/mediu
 |---|---|---|---|---|
 | M007 | closed | `plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md` | `plans/closure/mail-backend-foundation/007-status.md` | none |
 | M008 | closed | `plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md` | `plans/closure/mail-backend-foundation/008-status.md` | none |
-| M009 | conditionally closed | `plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md` | `plans/closure/mail-backend-foundation/009-status.md` | hosted run 37372987942 must complete green; GitHub Actions outage |
+| M009 | conditionally closed | `plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md` | `plans/closure/mail-backend-foundation/009-status.md` | needs a green hosted run; runs cancelled with no runner during the GitHub Actions outage |

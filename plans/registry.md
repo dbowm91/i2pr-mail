@@ -25,7 +25,7 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 conditionally closed | M007-M008 closed; M009 awaits hosted run 37372987942 (GitHub Actions outage). |
+| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 conditionally closed | M007-M008 closed; M009 awaits a green hosted run (GitHub Actions outage). |
 | Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective M009 ready; M006 blocked | M006 additionally requires M007–M009 closure and stable upstream i2pr Plan 355 app-principal gateway. |
 
 ## Dependency-ready implementation plans
@@ -38,7 +38,7 @@ Canonical direction:
 
 | Subsystem | Milestone | Status | Plan | Note |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | conditionally closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow landed and local verification is green. Hosted run 37372987942 is queued with no runner because GitHub Actions is in a major outage (incident "Incident with Actions", critical, investigating). Closure requires that run to conclude successfully. |
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | conditionally closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow landed and local verification is green. Hosted runs 37372987942 and 37373787767 both concluded red: job cancelled, 0 steps executed, no runner assigned, during the GitHub Actions major outage (incident "Incident with Actions", critical, investigating). Branch CI is red but uninformative. Closure requires a green hosted run. |
 
 ## Blocked work
 

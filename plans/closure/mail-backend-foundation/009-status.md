@@ -15,20 +15,25 @@ Source plan: `plans/implementation/mail-backend-foundation/009-hosted-verificati
 
 The hosted verification lane exists, invokes the repository-owned verification entry point, requires no secrets and no network fixture, and runs on the corrected and decomposed head. Local verification of the same command is green.
 
-M009 is **conditionally closed**, not closed. The one unmet acceptance criterion is that hosted CI is *green*. The run created for the corrective head has not executed because GitHub Actions is in a major outage. Per this milestone's own failure semantics, local-only success is not sufficient evidence to record closure, so the condition is named below rather than papered over.
+M009 is **conditionally closed**, not closed. The one unmet acceptance criterion is that hosted CI is *green*. Both runs created for the corrective head concluded unsuccessfully: the job was **cancelled with zero steps executed and no runner assigned**. Per this milestone's own failure semantics, local-only success is not sufficient evidence to record closure, so the condition is named below rather than papered over.
 
 ## Named condition to close
 
-Run **37372987942** (`.github/workflows/ci.yml`, branch `codex/foundation-planning`, head commit `f4f5d0e`, event `push`, created 2026-10-05T20:58:07Z) must complete with a successful conclusion. Once it does, record the result here and change Status to `closed`, then perform the M006 audit resumption noted in the unblock section.
+A GitHub Actions run of `.github/workflows/ci.yml` on this branch must complete with a successful conclusion. As of 2026-10-05T21:28Z it has not: two runs concluded red because GitHub could not supply a hosted runner, and the outage was still active when this record was written.
 
-Condition cause, external to this repository:
+| Run | Head | Created | Completed | Run conclusion | Job conclusion | Steps executed | Runner assigned |
+|---|---|---|---|---|---|---|---|
+| 37372987942 | `f4f5d0e` | 20:58:07Z | 21:16:08Z | failure | **cancelled** | **0** | none |
+| 37373787767 | `c777a36` | 21:06:02Z | 21:21:36Z | failure | **cancelled** | **0** | none |
 
-- GitHub status reports the `Actions` component as `major_outage`.
-- Open incident "Incident with Actions", created 2026-10-05T19:11:58Z, status `investigating`, impact `critical`.
-- Incident updates report "delays in assigning GitHub-hosted runners to Actions jobs" and "job failures and delays affecting GitHub-hosted runner assignment and workflow start times".
-- Observed symptom matches exactly: the job is created, its label is `ubuntu-latest`, it has no runner assigned, and it stays `queued`.
+Evidence that this is external infrastructure rather than a defect in this workflow:
 
-No retry storm, no conditional re-run, and no weakening of any check was used to work around this. The condition clears itself when the outage clears; nothing in this repository is waiting on a code change.
+- Both jobs report `steps=0` and an empty `runner_name`. Nothing in the repository ran: not checkout, not the toolchain install, not `scripts/verify.sh quick`. The job was cancelled while still waiting for a runner.
+- The workflow file itself was accepted and scheduled correctly. GitHub parsed it, created a job with the intended name and the `ubuntu-latest` label, and dispatched it. A malformed workflow fails earlier with an `invalid workflow` annotation and creates no job at all.
+- Both cancellations landed at roughly 15-18 minutes with no step output, which is the documented signature of runner-assignment failure rather than a build failure.
+- GitHub status reports the `Actions` component as `major_outage`. The open critical incident "Incident with Actions", created 2026-10-05T19:11:58Z and still `investigating`, reports "delays in assigning GitHub-hosted runners to Actions jobs", "job failures and delays affecting GitHub-hosted runner assignment and workflow start times", and, as of 21:09:15Z, "ongoing issues with Actions and Hosted Runners".
+
+No retry storm, no conditional re-run, and no weakening of any check was used to work around this. Per the plan's failure semantics, a failed hosted run is recorded as failed rather than hidden; re-running now would only queue against an active outage. One re-run should be issued once GitHub reports Actions operational, and its result recorded here. Until then nothing in this repository is waiting on a code change.
 
 ## Workflow and permission review
 
@@ -66,13 +71,16 @@ This run covers the M007 regressions (request-ledger bounds and release, typed s
 | Item | Value |
 |---|---|
 | Workflow | `.github/workflows/ci.yml`, name `CI` |
-| Run id | 37372987942 |
+| Runs | 37372987942 (head `f4f5d0e`), 37373787767 (head `c777a36`) |
 | URL | https://github.com/dbowm91/i2pr-mail/actions/runs/37372987942 |
-| Head commit | `f4f5d0e6c01350c9fa1b004d15d7dac8dbf3357b` |
 | Event | push to `codex/foundation-planning` |
-| Created | 2026-10-05T20:58:07Z |
-| Status at closure | `queued` |
-| Conclusion | none; no runner assigned because of the Actions outage |
+| Run conclusion | **failure** for both runs |
+| Job conclusion | **cancelled** for both runs |
+| Steps executed | **0** for both runs; no step produced output |
+| Runner assigned | none for either job; `runner_name` empty |
+| Interpretation | the lane was scheduled correctly but never obtained a hosted runner, during the GitHub Actions major outage |
+
+The branch therefore currently shows red CI. That red state is uninformative about the code: no verification step ran. It is recorded here so the branch status is not mistaken for a code failure.
 
 ## Registry and roadmap reconciliation
 
@@ -107,10 +115,10 @@ Neither condition can be satisfied by further local corrective work. Stale-plann
 
 High/medium severity: none.
 
-Named operational condition (this milestone): hosted run 37372987942 must complete successfully; see above. This is the sole reason for conditional rather than full closure.
+Named operational condition (this milestone): a hosted run must complete successfully. Runs 37372987942 and 37373787767 both concluded red with the job cancelled after zero steps and no runner, during the GitHub Actions major outage. This is the sole reason for conditional rather than full closure.
 
 ## Unblock audit
 
 No further corrective milestone exists in this sequence: M007, M008, and M009 are the whole of the post-M005 corrective line, and M007/M008 are closed with M009 conditionally closed on the run above.
 
-M006 remains blocked for the two reasons above. When the hosted run goes green, record it and upgrade this record to closed; no other plan changes status at that point, because M006 is still gated by upstream Plans 354 and 355. When upstream Plan 355 closes, M006 becomes eligible and must perform a fresh interface review against the closed contract before implementation.
+M006 remains blocked for the two reasons above. When a hosted run goes green, record the run id and result and upgrade this record to closed; no other plan changes status at that point, because M006 is still gated by upstream Plans 354 and 355. When upstream Plan 355 closes, M006 becomes eligible and must perform a fresh interface review against the closed contract before implementation.
