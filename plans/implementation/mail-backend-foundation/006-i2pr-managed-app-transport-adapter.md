@@ -195,3 +195,10 @@ Exact upstream commit/tag, app capability matrix, adapter mapping, POP3/SMTP int
 ## 16. Handoff notes
 
 This plan is deliberately blocked. Do not implement against the known-pre-runtime Plan-345 shape merely to make progress; M001-M005 are the progress path until upstream stabilizes.
+
+### Current external dependency evidence (checked 2026-10-05)
+
+The upstream i2pr registry at commit `bf257b2b20ecf81d3772181bb566b03cf29ca795` registers Plan 345 as a managed native app runtime contract/architecture foundation. It does not provide a production application gateway, managed app process lifecycle, or destination stream API for this adapter. The upstream README continues to describe i2pr as experimental. Therefore the adapter has no stable interface to target and remains blocked. Recheck the upstream registry and the accepted gateway API before starting implementation.
+
+- Registry: https://github.com/dbowm91/i2pr/blob/main/plans/registry.md (registry blob `b899c95159fad860e6970abec91d1f5253011fbc`)
+- Project readiness: https://github.com/dbowm91/i2pr

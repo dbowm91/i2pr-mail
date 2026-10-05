@@ -11,6 +11,69 @@ pub enum Pop3Error {
     MissingTerminator,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RemoteEntry {
+    pub ordinal: u32,
+    pub uidl: String,
+    pub size: Option<u64>,
+}
+
+pub fn parse_uidl_listing(lines: &[Vec<u8>]) -> Result<Vec<RemoteEntry>, Pop3Error> {
+    match parse_multiline(lines)? {
+        Pop3Reply::Multiline(entries) => entries
+            .into_iter()
+            .map(|line| {
+                let text = String::from_utf8(line).map_err(|_| Pop3Error::InvalidStatus)?;
+                let mut fields = text.split_ascii_whitespace();
+                let ordinal = fields
+                    .next()
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .filter(|n| *n > 0)
+                    .ok_or(Pop3Error::InvalidStatus)?;
+                let uidl = fields
+                    .next()
+                    .filter(|s| !s.is_empty() && s.len() <= 1024)
+                    .ok_or(Pop3Error::InvalidStatus)?;
+                if fields.next().is_some() {
+                    return Err(Pop3Error::InvalidStatus);
+                }
+                Ok(RemoteEntry {
+                    ordinal,
+                    uidl: uidl.to_owned(),
+                    size: None,
+                })
+            })
+            .collect(),
+        _ => Err(Pop3Error::InvalidStatus),
+    }
+}
+
+pub fn parse_list_listing(lines: &[Vec<u8>]) -> Result<Vec<(u32, u64)>, Pop3Error> {
+    match parse_multiline(lines)? {
+        Pop3Reply::Multiline(entries) => entries
+            .into_iter()
+            .map(|line| {
+                let text = String::from_utf8(line).map_err(|_| Pop3Error::InvalidStatus)?;
+                let mut fields = text.split_ascii_whitespace();
+                let ordinal = fields
+                    .next()
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .filter(|n| *n > 0)
+                    .ok_or(Pop3Error::InvalidStatus)?;
+                let size = fields
+                    .next()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .ok_or(Pop3Error::InvalidStatus)?;
+                if fields.next().is_some() {
+                    return Err(Pop3Error::InvalidStatus);
+                }
+                Ok((ordinal, size))
+            })
+            .collect(),
+        _ => Err(Pop3Error::InvalidStatus),
+    }
+}
+
 pub fn parse_status(line: &[u8]) -> Result<Pop3Reply, Pop3Error> {
     if line.len() > MAX_LINE {
         return Err(Pop3Error::LineTooLong);
@@ -72,5 +135,14 @@ mod tests {
             parse_multiline(&[b"data".to_vec()]),
             Err(Pop3Error::MissingTerminator)
         );
+    }
+
+    #[test]
+    fn uidl_values_are_opaque_and_ordinals_parse_per_snapshot() {
+        let entries =
+            parse_uidl_listing(&[b"1 ../opaque\r\n".to_vec(), b".\r\n".to_vec()]).unwrap();
+        assert_eq!(entries[0].ordinal, 1);
+        assert_eq!(entries[0].uidl, "../opaque");
+        assert!(parse_uidl_listing(&[b"0 no\r\n".to_vec(), b".\r\n".to_vec()]).is_err());
     }
 }

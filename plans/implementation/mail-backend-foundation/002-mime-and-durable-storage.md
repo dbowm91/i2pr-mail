@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 002 — MIME and Durable Storage
 
-Status: active
+Status: closed
 
 Repository baseline: planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; execute only after M001 closure
 

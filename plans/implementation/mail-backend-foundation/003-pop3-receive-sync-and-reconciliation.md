@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 003 — POP3 Receive, Sync, and Reconciliation
 
-Status: blocked
+Status: closed
 
 Repository baseline: planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; execute after M001 and M002 closure
 

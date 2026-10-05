@@ -15,6 +15,7 @@ mail-parser = "0.11.9"
 mail-builder = { version = "1.0.0", default-features = false }
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 sha2 = "0.10"
+base64 = "0.22"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

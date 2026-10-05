@@ -10,6 +10,11 @@ i2pr-mail-domain = { path = "../mail-domain" }
 i2pr-mail-mime = { path = "../mail-mime" }
 i2pr-mail-proto = { path = "../mail-proto" }
 i2pr-mail-store = { path = "../mail-store" }
+base64.workspace = true
+sha2.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+tempfile = "3.27.0"

@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 005 — Backend Service Convergence
 
-Status: blocked
+Status: closed
 
 Repository baseline: planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; execute after M003 and M004 closure
 

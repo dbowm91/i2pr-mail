@@ -25,13 +25,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M002 active | M001 closed; implementation continues sequentially. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M006 blocked | M001–M005 closed; M006 requires a stable i2pr managed-app transport/gateway. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend foundation | M002 MIME + durable storage | active | plans/implementation/mail-backend-foundation/002-mime-and-durable-storage.md | M001 closed; MIME and persistence implementation in progress. |
+None. All implementable milestones are closed; M006 remains externally blocked.
 
 ## Active closure work
 
@@ -41,14 +41,15 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M003 POP3 receive/sync | blocked | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | M001 and M002 closure. |
-| Mail backend foundation | M004 SMTP compose/outbox | blocked | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | M001 and M002 closure. |
-| Mail backend foundation | M005 backend convergence | blocked | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | M003 and M004 closure. |
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | M005 closure plus stable corrected i2pr managed-app transport/gateway; current Plan-345 contract alone is insufficient and Plan 349 must close first. |
+| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Upstream i2pr registry currently contains only a contract/architecture Plan 345; no managed-app gateway or destination stream API is available. Recheck on upstream change. |
 
 ## Recently closed or conditionally closed work
 
-None. Repository planning bootstrap is not an implementation milestone closure.
+| Mail backend foundation | M001 workspace/domain/boundaries | closed | plans/closure/mail-backend-foundation/001-status.md | — |
+| Mail backend foundation | M002 MIME + durable storage | closed | plans/closure/mail-backend-foundation/002-status.md | — |
+| Mail backend foundation | M003 POP3 receive/sync | closed | plans/closure/mail-backend-foundation/003-status.md | — |
+| Mail backend foundation | M004 SMTP compose/outbox | closed | plans/closure/mail-backend-foundation/004-status.md | — |
+| Mail backend foundation | M005 backend convergence | closed | plans/closure/mail-backend-foundation/005-status.md | — |
 
 ## Deferred unregistered product work
 
