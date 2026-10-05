@@ -1,0 +1,48 @@
+# Routine deterministic verification for the backend foundation.
+#
+# This lane owns no secrets and needs no network beyond the runner's package
+# access: there is no I2P service, Postman account, router, or live network
+# fixture anywhere in it. `bash scripts/verify.sh quick` is the canonical
+# verification entry point, so local and hosted runs execute the same checks.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Least privilege: verification only needs to read the repository.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (ubuntu, stable-ish toolchain from rust-toolchain.toml)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # rust-toolchain.toml is the single source of truth for the toolchain pin.
+      # Installing from that file keeps hosted CI from silently diverging from
+      # the MSRV policy, and never raises rust-version to satisfy CI.
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - name: Show the active toolchain
+        run: rustup show active-toolchain
+
+      # Correctness-neutral build cache. Keyed on the lockfile and the toolchain
+      # pin so a dependency or toolchain change never reuses a stale artifact.
+      - name: Cache cargo registry and build output
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Verify
+        run: bash scripts/verify.sh quick

@@ -32,11 +32,13 @@ Canonical direction:
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | ready | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | M007-M008 are closed; hosted verification needs no external interface. |
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | active | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | M007-M008 are closed; hosted verification needs no external interface. |
 
 ## Active closure work
 
-None.
+| Subsystem | Milestone | Status | Plan | Note |
+|---|---|---|---|---|
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | closing | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow added; awaiting green hosted run on the corrective head. |
 
 ## Blocked work
 
