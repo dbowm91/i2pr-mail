@@ -27,19 +27,25 @@ Implement MailTransport using the stable i2pr managed-native-app capability chan
 
 It is not ready.
 
-Hard dependency: M005 closed.
+Hard dependencies:
+
+- M005 closed;
+- post-M005 corrective M007-M009 must close.
 
 Interface dependencies in dbowm91/i2pr:
 
-- Plan 349 must close the pre-runtime v1 direction/reply/broker-policy corrective;
-- the router-side app-principal gateway must exist and expose a stable authorized path suitable for application I2P connectivity;
-- any required SAM/I2CP adapter semantics must be stable enough for a downstream client.
+- managed-native-app Plans 345, 349, 352, and 353 are closed;
+- Plan 354 must close the listener-independent SAM/I2CP private connection seams;
+- Plan 355 must close the router app-principal gateway and expose a stable authorized SAM/I2CP service-stream contract suitable for downstream use;
+- any required downstream SAM client adapter semantics must be stable enough for i2pr-mail.
 
 Proposal 170 administrative completion is not a blanket prerequisite unless the final app gateway specifically and narrowly requires it for an app-owned resource. A general administrator credential is forbidden.
 
 ## 3. Current implementation evidence
 
-The i2pr Plan-345 branch provides a runtime-neutral i2pr-app-proto contract but explicitly no live runtime, socket, process launcher, DNS owner, or router adapter. Plan 349 corrects message direction/request correlation and reserves the currently underspecified brokered_tcp open operation. Therefore the present contract is not sufficient authority for production mail transport.
+The original Plan-345-only description is stale. Upstream i2pr has closed Plans 345, 349, 352, and 353. Plan 354 is now ready and owns listener-independent private SAM/I2CP connection drivers; Plan 355 is registered behind it and owns the trusted AppPrincipal/effective-capability router gateway.
+
+Plan 355's frozen mapping is one managed-app logical stream to one raw SAM or I2CP protocol connection. It does not promise a pre-connected arbitrary I2P destination stream. M006 must therefore begin by reviewing the exact closed Plan-355 interface and deciding the smallest adapter above MailTransport. If a SAM client layer or sync/async execution-model change is required, record that decision before implementation rather than leaking it into lower mail crates.
 
 ## 4. Invariants that must not regress
 
@@ -181,8 +187,9 @@ bash scripts/verify.sh quick
 
 Stop if:
 
-- Plan 349 is not closed;
-- no stable router-side app transport exists;
+- M007-M009 are not closed;
+- upstream i2pr Plan 354 or Plan 355 is not closed;
+- no stable router-side app-principal SAM/I2CP service-stream contract exists;
 - integration requires UnsafeDirect or localhost socket fallback;
 - integration requires handing the app a general Proposal 170 administrator credential;
 - the only available surface is the intentionally reserved/underspecified generic brokered_tcp operation;
