@@ -2,7 +2,7 @@
 
 Status: blocked
 
-Repository baseline: original planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; corrected on post-M005 planning head; execute only after M007-M009 closure and upstream i2pr Plan 355 closure
+Repository baseline: original planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; corrected on post-M005 planning head; execute only after M007-M009 closure and an upstream app-side managed-app runtime milestone
 
 Source roadmap:
 
@@ -34,18 +34,21 @@ Hard dependencies:
 
 Interface dependencies in dbowm91/i2pr:
 
-- managed-native-app Plans 345, 349, 352, and 353 are closed;
-- Plan 354 must close the listener-independent SAM/I2CP private connection seams;
-- Plan 355 must close the router app-principal gateway and expose a stable authorized SAM/I2CP service-stream contract suitable for downstream use;
+- managed-native-app Plans 345, 349, 352, 353, 354, and 355 are closed (verified 2026-10-06 on `main` `2f82c799`);
+- Plan 354 closed the listener-independent SAM/I2CP private connection seams;
+- Plan 355 closed the router app-principal gateway and froze the authorized SAM/I2CP service-stream contract, but its gateway API is `pub(crate)` to `i2pr-daemon` and no production caller exists;
+- an app-side trusted runtime milestone (package/lifecycle supervision, AppManager, and the app-channel transport that can authenticate a process and supply `AppGatewayAuthorization`) must be planned and closed upstream. It is currently "eligible for a future plan" and unregistered;
 - any required downstream SAM client adapter semantics must be stable enough for i2pr-mail.
 
 Proposal 170 administrative completion is not a blanket prerequisite unless the final app gateway specifically and narrowly requires it for an app-owned resource. A general administrator credential is forbidden.
 
 ## 3. Current implementation evidence
 
-The original Plan-345-only description is stale. Upstream i2pr has closed Plans 345, 349, 352, and 353. Plan 354 is now ready and owns listener-independent private SAM/I2CP connection drivers; Plan 355 is registered behind it and owns the trusted AppPrincipal/effective-capability router gateway.
+The original Plan-345-only description is stale. Upstream i2pr has now closed Plans 345, 349, 352, 353, 354, and 355. Plan 354 owns listener-independent private SAM/I2CP connection drivers, and Plan 355 owns the trusted AppPrincipal/effective-capability router gateway built on them.
 
 Plan 355's frozen mapping is one managed-app logical stream to one raw SAM or I2CP protocol connection. It does not promise a pre-connected arbitrary I2P destination stream. M006 must therefore begin by reviewing the exact closed Plan-355 interface and deciding the smallest adapter above MailTransport. If a SAM client layer or sync/async execution-model change is required, record that decision before implementation rather than leaking it into lower mail crates.
+
+Plan 355 closed the router half only. Its closure record states it does not implement "a usable third-party application capability", and `AppGatewaySession`, `AppGatewayAuthorization`, `AppGatewayLimits`, and `AppGatewayComposition` are all `pub(crate)` in `crates/i2pr-daemon/src/app_gateway.rs` under a module-level `#![allow(dead_code)]` reading "No production app-runtime caller exists yet". `AppGatewayAuthorization::from_trusted_composition` is deliberately non-serializable and unreachable off-wire, so an application cannot mint its own authority. i2pr-mail therefore cannot integrate against Plan 355 as shipped: there is no app-side channel, no process authentication, and no public surface to adapt.
 
 ## 4. Invariants that must not regress
 
@@ -188,7 +191,9 @@ bash scripts/verify.sh quick
 Stop if:
 
 - M007-M009 are not closed;
-- upstream i2pr Plan 354 or Plan 355 is not closed;
+- upstream i2pr Plan 354 or Plan 355 is not closed (both closed as of `2f82c799`);
+- no app-side trusted runtime and reachable app-channel exist to obtain authorized app transport, or the router-side gateway API is not publicly consumable by a downstream process;
+- integration requires the application to construct or be granted router-internal authority rather than receiving scoped capability from a trusted host runtime;
 - no stable router-side app-principal SAM/I2CP service-stream contract exists;
 - integration requires UnsafeDirect or localhost socket fallback;
 - integration requires handing the app a general Proposal 170 administrator credential;
@@ -203,21 +208,34 @@ Exact upstream commit/tag, app capability matrix, adapter mapping, POP3/SMTP int
 
 This plan is deliberately blocked. Do not implement against the known-pre-runtime Plan-345 shape merely to make progress; M001-M005 are the progress path until upstream stabilizes.
 
-### Current external dependency evidence (re-audited 2026-10-05 during M009)
+### Current external dependency evidence (re-audited 2026-10-05 during M009, re-audited again 2026-10-06)
 
-The earlier Plan-345-only reading is superseded. The upstream i2pr branch `work/router-console-plans-356-358` at `f6036a9e` shows:
+The 2026-10-05 audit is superseded. It read upstream branch `work/router-console-plans-356-358` at `f6036a9e` and concluded that no Plan 354 or Plan 355 closure record existed and that `82080dbd` was not an ancestor of `main`.
 
-- Closure records exist for Plans 345, 349, 352, and 353 (`plans/closure/managed-native-app-runtime/`), so that line of the runtime has closed.
-- No closure record exists for Plan 354 or Plan 355.
-- The upstream registry row reads "Plans 345, 349, 352, 353 passed; 354 ready; 355 blocked", with Plan 354 owning listener-independent private SAM/I2CP connection drivers and Plan 355 owning the trusted app-principal router gateway hard-blocked on 354.
-- Plan 354's implementation plan exists and is ready; Plan 355's implementation plan exists and is blocked on 354.
-- The commit registering Plans 354 and 355 (`82080dbd`) is present on `work/router-console-plans-356-358` and on `work/plans-352-353`, but is **not** an ancestor of upstream `main`.
+The 2026-10-06 re-audit reads upstream `main` at `2f82c799` and finds the named blocker cleared:
 
-Therefore the adapter still has no stable router gateway interface to target: the gateway is Plan 355, Plan 355 has not started, and Plan 355 is itself blocked on Plan 354. M006 remains blocked.
+| Plan | Closure commit | Closure record | Status |
+|---|---|---|---|
+| 354 | `6cd35bfe` | `plans/closure/managed-native-app-runtime/354-status.md` | `passed-managed-app-private-client-transport-seams` |
+| 355 | `2b96f1bc` | `plans/closure/managed-native-app-runtime/355-status.md` | `passed-managed-app-principal-gateway-private-client-seams` |
 
-M006's remaining local gate is i2pr-mail M007-M009 closure; M007 and M008 are closed and M009 is conditionally closed pending its hosted verification run.
+Both closure commits are ancestors of upstream `main`, as is the `d2f17f38` contract freeze. Upstream's registry and roadmap now read "Plans 345, 349, 352–355 passed" and "private SAM/I2CP seams and router app-principal gateway closed".
 
-When Plan 355 does close, M006 must perform a fresh interface review against the closed contract before implementation rather than assuming the current draft shape. The seam it must implement above is frozen in `docs/architecture/transport-boundary.md`, including the rule that Plan 355 grants one logical service stream per operation rather than a pre-connected arbitrary destination byte stream, and the execution-model stop condition if the closed SDK is async-only.
+M006 nonetheless remains blocked, on a different and better-characterized dependency. Plan 355 closed the router side only:
+
+- `crates/i2pr-daemon/src/app_gateway.rs` declares `AppGatewayAuthorization`, `AppGatewayLimits`, `AppGatewayComposition`, and `AppGatewaySession` as `pub(crate)`, and the module carries `#![allow(dead_code)]` with the comment "No production app-runtime caller exists yet; this infrastructure API is exercised by its module tests until a separately planned consumer lands." No downstream crate and no external process can reach the gateway.
+- Plan 355's closure record states it "does not implement an application runtime, process authentication, package management, sandboxing, brokered clearnet, or a usable third-party application capability", and that "the future trusted runtime retains framing and stream-id ownership" because the module does not decode managed-app frames.
+- `i2pr-app-proto` is `publish = false` and is described upstream as "vocabulary and pure validation only".
+- The v1 contract still records that `hello` "is not authentication proof" and that "a future trusted transport owner must bind that claim to its authenticated process/IPC principal before authorizing access."
+- Upstream's dependency graph terminates at `package/lifecycle + AppManager administrative owner (eligible for a future plan)`; the registry confirms "A future AppManager/package/process plan is eligible to be registered against the gateway; none is registered yet."
+
+M006 therefore has no authorized app transport to obtain. This is the correct security posture — an app must not be able to construct its own gateway authority — but it means the adapter cannot be written until upstream supplies the app-side runtime and a reachable channel.
+
+The local corrective lane is complete: M007, M008, and M009 are closed with accepted records and hosted verification green on run `37376165523`. Nothing in this repository can satisfy the remaining dependency.
+
+When an app-side runtime milestone closes upstream, M006 must perform a fresh interface review against the closed contract rather than assuming either the current draft shape or this 2026-10-06 reading. The seam it must implement above is frozen in `docs/architecture/transport-boundary.md`, including the rule that Plan 355 grants one logical service stream per operation rather than a pre-connected arbitrary destination byte stream, and the execution-model stop condition if the closed SDK is async-only.
 
 - Registry: https://github.com/dbowm91/i2pr/blob/main/plans/registry.md
+- Managed app runtime roadmap: https://github.com/dbowm91/i2pr/blob/main/plans/subsystems/managed-native-app-runtime-roadmap.md
+- v1 contract: https://github.com/dbowm91/i2pr/blob/main/specs/references/managed-native-app-runtime-v1.md
 - Project readiness: https://github.com/dbowm91/i2pr

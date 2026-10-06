@@ -123,6 +123,8 @@ This addendum closes when M007-M009 have accepted closure records, no high/mediu
 
 This addendum is closed: M007-M009 all have accepted closure records, no high or medium corrective finding remains, and hosted deterministic verification is green.
 
+Dated upstream observation, 2026-10-06: upstream i2pr Plans 354 and 355 have since closed, so the "if Plan 355 has not yet closed" branch in §7 no longer applies and M006 is not legitimately ready on Plan 355 closure alone. Plan 355 is router-side only — its gateway types are `pub(crate)`, no app-side runtime or channel exists, and `i2pr-app-proto` is unpublished. M006's remaining blocker has therefore moved to an app-side trusted runtime milestone that upstream has not yet registered. This does not reopen the corrective sequence; it only corrects the upstream-state reading in §5 above.
+
 | Milestone | Status | Implementation plan | Closure record | Blockers |
 |---|---|---|---|---|
 | M007 | closed | `plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md` | `plans/closure/mail-backend-foundation/007-status.md` | none |

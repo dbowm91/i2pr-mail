@@ -26,7 +26,7 @@ Canonical direction:
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
 | Mail backend post-M005 corrective | closed | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 closed | M007-M009 all closed; hosted verification green on run 37376165523. |
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective sequence closed; M006 blocked | M007–M009 are closed. M006 additionally requires upstream i2pr Plan 354 → Plan 355 closure. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective sequence closed; M006 blocked | M007–M009 are closed. Upstream i2pr Plans 354 and 355 have since closed, but Plan 355 delivers the router-side gateway only; no app-side channel, trusted runtime, or reachable gateway API exists, so M006 still has no authorized-transport surface to implement against. |
 
 ## Dependency-ready implementation plans
 
@@ -42,7 +42,7 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | All local corrective work (M007–M009) is closed. Remaining blocker is upstream only: i2pr Plan 354 → Plan 355; Plan 355 owns the router app-principal SAM/I2CP gateway and has not started. |
+| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Local corrective work (M007–M009) is closed and the former upstream blocker is satisfied: i2pr Plans 354 (`6cd35bfe`) and 355 (`2b96f1bc`) are both closed on `main` (`2f82c799`). Remaining blocker is upstream and has moved: Plan 355's `AppGatewaySession`/`AppGatewayAuthorization` are `pub(crate)` in `i2pr-daemon` under `#![allow(dead_code)]`, no app-side channel or trusted runtime exists, `i2pr-app-proto` is `publish = false`, and upstream's package/lifecycle + AppManager milestone is "eligible for a future plan" and unregistered. M006 cannot obtain authorized app transport until that app-side milestone is planned and closed. |
 
 ## Recently closed or conditionally closed work
 
