@@ -1,6 +1,8 @@
 # Mail Backend Foundation Milestone 011 — Foundation Branch Integration, Merge, and Cleanup
 
-Status: ready for handoff
+Status: closed — see `plans/closure/mail-backend-foundation/011-status.md`
+
+Executed as written. `main` moved `9f2cb7c74e0b7fab4cabba4fd404fab575a19750` → `64cd8121c387a42274e07f45a84e227ec23169d9` by a single non-forced fast-forward, with no production change and no rewrite of any cited commit. Candidate CI `37491157600` and integration-main CI `37491896332` are both green. The sections below are retained unedited as the plan of record; where execution refined a value, the closure record is authoritative.
 
 Planning baseline:
 

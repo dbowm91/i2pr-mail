@@ -26,13 +26,11 @@ Canonical direction:
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
 | Mail backend post-M005 corrective | closed | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 closed | M007-M009 all closed; hosted verification green on run 37376165523. |
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M011 ready; M006 blocked | M001–M005 and M007–M010 are closed. M011 integrates the qualified foundation to main without rewriting evidence-bearing history. M006 remains independently blocked on the upstream app-side managed-app runtime. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M011 closed; M006 blocked | M001–M005 and M007–M010 are closed and were integrated to `main` by history-preserving fast-forward in M011; the work branch `codex/foundation-planning` is retired. No dependency-ready local implementation work remains. M006 is the only active capability plan and remains blocked on the upstream app-side managed-app runtime. |
 
 ## Dependency-ready implementation plans
 
-| Subsystem | Milestone | Status | Plan | Why ready |
-|---|---|---|---|---|
-| Mail backend foundation | M011 foundation branch integration/merge/cleanup | ready | plans/implementation/mail-backend-foundation/011-foundation-branch-integration-merge-and-cleanup.md | All local foundation/corrective/SAM work through M010 is closed; the branch is a clean descendant of main and has exact-head green CI. |
+None. Every locally executable milestone is closed; M006 is blocked on an external upstream dependency.
 
 ## Active closure work
 
@@ -42,7 +40,7 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Local capability/corrective work through M010 is closed; M011 must first integrate that qualified foundation to main. Independently, upstream reachability is still absent: Plan 355's router-side gateway is not an app runtime/channel, and the package/lifecycle + AppManager successor remains unregistered. M006 cannot execute until both M011 is closed and that upstream app-side milestone is planned and closed. |
+| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | One condition remains. Its local gate is satisfied: all foundation and corrective work through M010 is closed, and M011 integrated that qualified work to `main`, so M006 starts from mainline authority rather than a retired work branch. The remaining blocker is upstream reachability, re-audited 2026-10-06 against i2pr `main` `144c54da`: Plan 355's router-side gateway is not an app runtime/channel — `AppGatewaySession`, `AppGatewayAuthorization`, `AppGatewayLimits`, and `AppGatewayComposition` remain `pub(crate)` in `crates/i2pr-daemon/src/app_gateway.rs`, referenced nowhere else in the repository, under a `#![allow(dead_code)]` reading "No production app-runtime caller exists yet" — and the package/lifecycle + AppManager successor remains unregistered and eligible only for a future plan. M006 cannot execute until that upstream app-side milestone is planned and closed. |
 
 ## Recently closed or conditionally closed work
 
@@ -55,6 +53,7 @@ None.
 | Mail backend foundation | M008 runtime decomposition + transport seam | closed | plans/closure/mail-backend-foundation/008-status.md | — |
 | Mail backend post-M005 corrective | M009 hosted verification + corrective closure | closed | plans/closure/mail-backend-foundation/009-status.md | — |
 | Mail backend foundation | M010 SAM 3.1 client codec + contract qualification | closed | plans/closure/mail-backend-foundation/010-status.md | — |
+| Mail backend foundation | M011 foundation branch integration/merge/cleanup | closed | plans/closure/mail-backend-foundation/011-status.md | — |
 
 ## Deferred unregistered product work
 
