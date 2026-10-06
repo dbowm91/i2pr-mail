@@ -25,26 +25,24 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | active | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 conditionally closed | M007-M008 closed; M009 awaits a green hosted run (GitHub Actions outage). |
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective M009 ready; M006 blocked | M006 additionally requires M007–M009 closure and stable upstream i2pr Plan 355 app-principal gateway. |
+| Mail backend post-M005 corrective | closed | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 closed | M007-M009 all closed; hosted verification green on run 37376165523. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | corrective sequence closed; M006 blocked | M007–M009 are closed. M006 additionally requires upstream i2pr Plan 354 → Plan 355 closure. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend post-M005 corrective | none ready | — | — | M007-M008 are closed and M009 is conditionally closed; no corrective plan remains unblocked. |
+| — | none ready | — | — | The post-M005 corrective sequence M007–M009 is closed. No corrective plan remains unblocked. |
 
 ## Active closure work
 
-| Subsystem | Milestone | Status | Plan | Note |
-|---|---|---|---|---|
-| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | conditionally closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | Workflow landed and local verification is green. Hosted runs 37372987942 and 37373787767 both concluded red: job cancelled, 0 steps executed, no runner assigned, during the GitHub Actions major outage (incident "Incident with Actions", critical, investigating). Branch CI is red but uninformative. Closure requires a green hosted run. |
+None.
 
 ## Blocked work
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | i2pr-mail M009 closure plus upstream i2pr Plan 354 → Plan 355; Plan 355 owns the router app-principal SAM/I2CP gateway. |
+| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | All local corrective work (M007–M009) is closed. Remaining blocker is upstream only: i2pr Plan 354 → Plan 355; Plan 355 owns the router app-principal SAM/I2CP gateway and has not started. |
 
 ## Recently closed or conditionally closed work
 
@@ -55,6 +53,7 @@ Canonical direction:
 | Mail backend foundation | M005 backend convergence | closed | plans/closure/mail-backend-foundation/005-status.md | — |
 | Mail backend foundation | M007 request/state/protocol corrective | closed | plans/closure/mail-backend-foundation/007-status.md | — |
 | Mail backend foundation | M008 runtime decomposition + transport seam | closed | plans/closure/mail-backend-foundation/008-status.md | — |
+| Mail backend post-M005 corrective | M009 hosted verification + corrective closure | closed | plans/closure/mail-backend-foundation/009-status.md | — |
 
 ## Deferred unregistered product work
 

@@ -1,8 +1,8 @@
 # Mail Backend Foundation M009 Closure — Hosted Verification and Corrective Closure
 
-Status: conditionally closed
+Status: closed
 
-Date: 2026-10-05
+Date: 2026-10-05 (condition cleared 2026-10-05T21:30:16Z)
 
 Predecessor closures:
 
@@ -15,11 +15,13 @@ Source plan: `plans/implementation/mail-backend-foundation/009-hosted-verificati
 
 The hosted verification lane exists, invokes the repository-owned verification entry point, requires no secrets and no network fixture, and runs on the corrected and decomposed head. Local verification of the same command is green.
 
-M009 is **conditionally closed**, not closed. The one unmet acceptance criterion is that hosted CI is *green*. Both runs created for the corrective head concluded unsuccessfully: the job was **cancelled with zero steps executed and no runner assigned**. Per this milestone's own failure semantics, local-only success is not sufficient evidence to record closure, so the condition is named below rather than papered over.
+M009 is **closed**. Hosted verification is green on the corrective head.
 
-## Named condition to close
+Two earlier runs were recorded red: the job was cancelled with zero steps executed and no runner assigned, because GitHub Actions was in a major outage. The condition named at conditional closure was met when the outage cleared and run 37376165523 completed successfully, including all six steps and the full verification floor. That history is kept below rather than erased.
 
-A GitHub Actions run of `.github/workflows/ci.yml` on this branch must complete with a successful conclusion. As of 2026-10-05T21:28Z it has not: two runs concluded red because GitHub could not supply a hosted runner, and the outage was still active when this record was written.
+## Condition history and clearance
+
+A GitHub Actions run of `.github/workflows/ci.yml` on this branch had to complete with a successful conclusion. The first two runs could not execute.
 
 | Run | Head | Created | Completed | Run conclusion | Job conclusion | Steps executed | Runner assigned |
 |---|---|---|---|---|---|---|---|
@@ -33,7 +35,9 @@ Evidence that this is external infrastructure rather than a defect in this workf
 - Both cancellations landed at roughly 15-18 minutes with no step output, which is the documented signature of runner-assignment failure rather than a build failure.
 - GitHub status reports the `Actions` component as `major_outage`. The open critical incident "Incident with Actions", created 2026-10-05T19:11:58Z and still `investigating`, reports "delays in assigning GitHub-hosted runners to Actions jobs", "job failures and delays affecting GitHub-hosted runner assignment and workflow start times", and, as of 21:09:15Z, "ongoing issues with Actions and Hosted Runners".
 
-No retry storm, no conditional re-run, and no weakening of any check was used to work around this. Per the plan's failure semantics, a failed hosted run is recorded as failed rather than hidden; re-running now would only queue against an active outage. One re-run should be issued once GitHub reports Actions operational, and its result recorded here. Until then nothing in this repository is waiting on a code change.
+No retry storm, no conditional re-run, and no weakening of any check was used to work around this. Per the plan's failure semantics, a failed hosted run was recorded as failed rather than hidden, and no re-run was issued while the outage was active.
+
+**Clearance.** GitHub reported the `Actions` component `operational` with no unresolved incidents by 2026-10-06. Run 37376165523 then executed normally and passed. No repository change was required between the cancelled runs and the green run, which is itself confirmation that the earlier failures were infrastructural rather than a defect in the workflow.
 
 ## Workflow and permission review
 
@@ -71,24 +75,31 @@ This run covers the M007 regressions (request-ledger bounds and release, typed s
 | Item | Value |
 |---|---|
 | Workflow | `.github/workflows/ci.yml`, name `CI` |
-| Runs | 37372987942 (head `f4f5d0e`), 37373787767 (head `c777a36`) |
-| URL | https://github.com/dbowm91/i2pr-mail/actions/runs/37372987942 |
+| **Green run** | **37376165523**, head `9bc320636fd9f70da69119858d69b71264aab3e6` |
+| URL | https://github.com/dbowm91/i2pr-mail/actions/runs/37376165523 |
 | Event | push to `codex/foundation-planning` |
-| Run conclusion | **failure** for both runs |
-| Job conclusion | **cancelled** for both runs |
-| Steps executed | **0** for both runs; no step produced output |
-| Runner assigned | none for either job; `runner_name` empty |
-| Interpretation | the lane was scheduled correctly but never obtained a hosted runner, during the GitHub Actions major outage |
+| Created / completed | 2026-10-05T21:29:19Z / 2026-10-05T21:30:16Z |
+| Run conclusion | **success** |
+| Job conclusion | **success** |
+| Steps | all six green: set up job, checkout, install pinned toolchain, show active toolchain, cache, verify |
+| Earlier cancelled runs | 37372987942 (head `f4f5d0e`), 37373787767 (head `c777a36`): run failure, job cancelled, 0 steps, no runner |
 
-The branch therefore currently shows red CI. That red state is uninformative about the code: no verification step ran. It is recorded here so the branch status is not mistaken for a code failure.
+Green-run evidence taken from the run log:
+
+- Toolchain resolved from `rust-toolchain.toml` as `1.88.0-x86_64-unknown-linux-gnu`, confirming the MSRV pin is honored on the hosted runner rather than raised to satisfy CI.
+- `test result: ok` for all five crates: domain 6, mime 8, proto 11, runtime 19, store 13 — 57 tests, 0 failures.
+- `crate dependency and source boundary checks passed` and `typed durable-state API check passed`, so the M007 guard runs in hosted CI too.
+- First green run reported a cache miss and populated the cache, as expected for a cold lane.
+
+The two cancelled runs remain listed as red history. That red state was uninformative about the code, since no verification step ever ran in them, and the successful run supersedes it.
 
 ## Registry and roadmap reconciliation
 
 - M007: closed, recorded in the roadmap status table and the registry's recently-closed list.
 - M008: closed, recorded in the same places.
-- M009: conditionally closed, listed under active closure work in the registry.
-- The post-M005 corrective addendum remains `active`. Its completion definition requires M007-M009 to have accepted closure records with no high/medium finding; M009 is not yet accepted, so the addendum is not closed. M009 plan status is recorded as conditionally closed.
-- The parent roadmap dependency graph now reads M007 and M008 closed and M009 dependency-ready.
+- M009: closed; the registry's active-closure-work section is now empty and M009 joins the recently-closed list.
+- The post-M005 corrective addendum closes: M007-M009 all have accepted closure records with no high or medium finding remaining, hosted deterministic verification is green, and M006's remaining blocker is exactly the named upstream dependency.
+- The parent roadmap dependency graph reads M007, M008, and M009 closed.
 
 ## M006 dependency audit
 
@@ -115,10 +126,12 @@ Neither condition can be satisfied by further local corrective work. Stale-plann
 
 High/medium severity: none.
 
-Named operational condition (this milestone): a hosted run must complete successfully. Runs 37372987942 and 37373787767 both concluded red with the job cancelled after zero steps and no runner, during the GitHub Actions major outage. This is the sole reason for conditional rather than full closure.
+None. The one named condition, a successful hosted run, was cleared by run 37376165523 on 2026-10-05T21:30:16Z. The two earlier cancelled runs were caused by the GitHub Actions major outage, executed zero steps, and required no repository change; they are retained as history rather than reopened work.
 
 ## Unblock audit
 
 No further corrective milestone exists in this sequence: M007, M008, and M009 are the whole of the post-M005 corrective line, and M007/M008 are closed with M009 conditionally closed on the run above.
 
-M006 remains blocked for the two reasons above. When a hosted run goes green, record the run id and result and upgrade this record to closed; no other plan changes status at that point, because M006 is still gated by upstream Plans 354 and 355. When upstream Plan 355 closes, M006 becomes eligible and must perform a fresh interface review against the closed contract before implementation.
+M006 remains blocked for the two reasons above. M009 is closed and the post-M005 corrective sequence M007-M009 is complete with accepted closure records and no high/medium finding.
+
+The corrective addendum therefore closes, subject to its own completion definition. M006 remains blocked solely on upstream i2pr Plans 354 and 355, which no local work can satisfy; when Plan 355 closes, M006 becomes eligible and must perform a fresh interface review against the closed contract before implementation. When upstream Plan 355 closes, M006 becomes eligible and must perform a fresh interface review against the closed contract before implementation.

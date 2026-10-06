@@ -129,8 +129,7 @@ Dependency classification:
 - M003 hard-depends on M001/M002.
 - M004 hard-depends on M001/M002.
 - M005 hard-depends on M003/M004.
-- M007 and M008 are closed.
-- M009 is conditionally closed pending a green hosted run; runs 37372987942 and 37373787767 were cancelled with no runner during the GitHub Actions outage.
+- M007, M008, and M009 are closed. Hosted verification is green on run 37376165523; runs 37372987942 and 37373787767 were cancelled with no runner during a GitHub Actions outage and executed zero steps.
 - M006 hard-depends on M005 plus M007-M009 corrective closure, and interface-depends on upstream i2pr Plan 355 (which follows Plan 354).
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
@@ -247,4 +246,4 @@ This roadmap closes only when M001-M006 and the post-M005 M007-M009 corrective s
 | M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M007–M009 + upstream i2pr Plan 355 |
 | M007 | closed | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | plans/closure/mail-backend-foundation/007-status.md | none |
 | M008 | closed | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | plans/closure/mail-backend-foundation/008-status.md | none |
-| M009 | conditionally closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | plans/closure/mail-backend-foundation/009-status.md | needs a green hosted run |
+| M009 | closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | plans/closure/mail-backend-foundation/009-status.md | none |

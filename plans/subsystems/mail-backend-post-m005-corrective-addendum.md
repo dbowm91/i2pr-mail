@@ -69,7 +69,7 @@ M009 hosted verification + corrective closure readiness
 i2pr Plan 354 -> Plan 355 --------+--> M006 i2pr adapter
 ```
 
-M007 and M008 are closed. M009 is conditionally closed on its hosted verification run. M006 hard-depends on M009 and interface-depends on upstream i2pr Plans 354 and 355 closure.
+M007, M008, and M009 are closed. M006 interface-depends on upstream i2pr Plans 354 and 355 closure.
 
 ## 4. Corrective milestones
 
@@ -121,8 +121,10 @@ This addendum closes when M007-M009 have accepted closure records, no high/mediu
 
 ## 8. Status
 
+This addendum is closed: M007-M009 all have accepted closure records, no high or medium corrective finding remains, and hosted deterministic verification is green.
+
 | Milestone | Status | Implementation plan | Closure record | Blockers |
 |---|---|---|---|---|
 | M007 | closed | `plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md` | `plans/closure/mail-backend-foundation/007-status.md` | none |
 | M008 | closed | `plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md` | `plans/closure/mail-backend-foundation/008-status.md` | none |
-| M009 | conditionally closed | `plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md` | `plans/closure/mail-backend-foundation/009-status.md` | needs a green hosted run; runs cancelled with no runner during the GitHub Actions outage |
+| M009 | closed | `plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md` | `plans/closure/mail-backend-foundation/009-status.md` | none; hosted run 37376165523 green |
