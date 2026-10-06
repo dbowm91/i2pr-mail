@@ -63,11 +63,11 @@ Proposal 170 administration is not required for basic mail operation.
 
 ## 4. Current state
 
-M001-M005 are implemented and closed. The repository now contains the domain, MIME facade, durable store, deterministic POP3/SMTP runtime, and frontend-neutral BackendService described by those milestones.
+M001-M005 are implemented and closed. The post-M005 corrective sequence M007-M009 is also closed, including hosted verification, and M010 closed the isolated SAM 3.1 client codec plus downstream contract qualification.
 
-Post-closure review is owned by `plans/subsystems/mail-backend-post-m005-corrective-addendum.md`. M007 corrects request/state/protocol defects, M008 decomposes the runtime and freezes the integration seam, and M009 adds hosted verification.
+The qualified foundation currently lives on `codex/foundation-planning`. At the M011 planning baseline it is a clean descendant of `main`, with no commits behind and exact-head hosted CI green. M011 is therefore the local dependency-ready milestone: it integrates the completed foundation to `main` without rewriting the SHA-based evidence in the existing closure records.
 
-Upstream i2pr has advanced beyond the original Plan-345-only assumption. Managed-native-app Plans 345, 349, 352, and 353 are closed; Plan 354 is ready to extract listener-independent SAM/I2CP private connection seams; Plan 355 is registered behind it to provide the router app-principal gateway. M006 therefore remains blocked on both the local M007-M009 corrective closure and upstream Plan 355's stable service-stream contract.
+M006 remains independently blocked on upstream reachability. i2pr Plans 354 and 355 have closed the private SAM/I2CP seams and router app-principal gateway, but no app-side trusted runtime/process channel exists yet. M011 does not change or weaken that blocker.
 
 ## 5. Target architecture
 
@@ -121,9 +121,12 @@ M001 workspace/domain/boundaries
                                    v
                                   M009 hosted qualification
                                    |
-                                   +--> M010 SAM 3.1 client codec
-                                   |      + contract qualification
-                                   |      does NOT unblock M006
+                                   v
+                                  M010 SAM 3.1 client codec
+                                   + contract qualification
+                                   |
+                                   v
+                                  M011 foundation branch integration
                                    |
                                    +--> M006 i2pr adapter
                                         also requires an upstream
@@ -137,7 +140,8 @@ Dependency classification:
 - M005 hard-depends on M003/M004.
 - M007, M008, and M009 are closed. Hosted verification is green on run 37376165523; runs 37372987942 and 37373787767 were cancelled with no runner during a GitHub Actions outage and executed zero steps.
 - M010 hard-depends on M009 closure and on ADR-0002. It depends on no upstream milestone: the SAM 3.1 client codec is the client half of the adapter, and upstream `specs/references/portable-service-tunnel-sam-adapter-handoff.md` assigns SAM client implementation to a separate repository that i2pr will never ship. M010 is closed with no remaining local work.
-- M006 hard-depends on M005 plus M007-M009 corrective closure. Its interface dependency changed on 2026-10-06: upstream Plans 354 (`6cd35bfe`) and 355 (`2b96f1bc`) are closed, but Plan 355 is router-side only, its gateway types are `pub(crate)`, and no app-side runtime or channel exists. M010 removes the codec and decision dependencies from M006 but does not remove the transport dependency.
+- M011 hard-depends on all completed local foundation work through M010 and on an exact-head green integration candidate. It owns only history-preserving mainline integration, qualification, planning reconciliation, and work-branch cleanup.
+- M006 hard-depends locally on M011 closure. Its independent interface dependency remains the upstream app-side managed-app runtime: Plans 354/355 are closed router-side, but no trusted app process/channel can reach that gateway. M010 removed the codec and execution-model decision dependencies; M011 removes the long-lived-branch dependency. Neither removes upstream reachability.
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
 ## 7. Milestones
@@ -202,6 +206,14 @@ This milestone exists because upstream will not supply it: `specs/references/por
 
 Exit: `i2pr-mail-sam` compiles with zero dependencies, encodes and parses exactly the outbound mail path, rejects injection and malformed input fail-closed, and the M006 contract matrix cites the closed upstream contract.
 
+### M011 — Foundation branch integration, merge, and cleanup
+
+Class: integration + planning/branch hygiene.
+
+Objective: move the completed M001-M005/M007-M010 foundation from `codex/foundation-planning` to `main` by a history-preserving exact-head fast-forward, prove mainline CI, reconcile planning, and retire the work branch only after durable closure evidence exists on main.
+
+Exit: all evidence-bearing commits remain reachable at their original SHAs from `main`; exact integration and final closure heads have green hosted CI; M006 is the only remaining active capability plan and remains blocked on the upstream app-side runtime; no unique work remains solely on the feature branch.
+
 ## 8. Cross-cutting requirements
 
 ### Storage and migration
@@ -260,8 +272,9 @@ This roadmap closes only when M001-M006 and the post-M005 M007-M009 corrective s
 | M003 | closed | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | plans/closure/mail-backend-foundation/003-status.md | none |
 | M004 | closed | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | plans/closure/mail-backend-foundation/004-status.md | none |
 | M005 | closed | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | plans/closure/mail-backend-foundation/005-status.md | none |
-| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | upstream i2pr app-side managed-app runtime (Plans 354/355 closed, but router-side only) |
+| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M011 closure + upstream i2pr app-side managed-app runtime (Plans 354/355 closed, but router-side only) |
 | M007 | closed | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | plans/closure/mail-backend-foundation/007-status.md | none |
 | M008 | closed | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | plans/closure/mail-backend-foundation/008-status.md | none |
 | M009 | closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | plans/closure/mail-backend-foundation/009-status.md | none |
 | M010 | closed | plans/implementation/mail-backend-foundation/010-sam31-client-codec-and-contract-qualification.md | plans/closure/mail-backend-foundation/010-status.md | none |
+| M011 | ready | plans/implementation/mail-backend-foundation/011-foundation-branch-integration-merge-and-cleanup.md | — | none |
