@@ -45,7 +45,7 @@ The plan's planning baseline named `1d17784e` as the reviewed integration head. 
 | Feature branch carries no unique content | `git diff --name-only main candidate` / `git rev-list --count main..candidate` | **0 files** differ; **0** commits unique to the branch. |
 | All expected workspace/plans/docs files present on `main` | `git cat-file -e origin/main:<path>` over 16 paths | All present: `Cargo.toml`, `rust-toolchain.toml`, `scripts/verify.sh`, `scripts/check-boundaries.sh`, `.github/workflows/ci.yml`, `README.md`, both architecture docs, both ADRs, `plans/registry.md`, the foundation roadmap, closure records `001`–`010`, and this milestone's implementation plan. |
 | Integrated-main hosted CI green | run **`37491896332`**, workflow `CI`, head `64cd8121`, **success**, 44s | Green on the integration SHA in its new role as `main`. |
-| Final closure/planning main head CI green | run recorded below | Green. |
+| Final closure/planning main head CI green | run **`37492333651`**, head `7d4b71c5`, **success**, 29s | Green on the closure/planning head. |
 | Cited M001–M010 commits retain original SHAs | SHA sweep across `plans/closure/mail-backend-foundation/*-status.md` | Every cited local commit SHA resolves and is reachable from `main`. One exception is recorded as finding 1 below. |
 | M006 remains blocked; no false live-I2P claim | registry, roadmap, `docs/architecture/i2pr-integration.md`, this record | M006 stays `blocked` on the upstream app-side runtime. No live I2P, router, Postman, or SAM-peer capability is claimed anywhere. |
 
@@ -55,9 +55,11 @@ The plan's planning baseline named `1d17784e` as the reviewed integration head. 
 |---|---|---|---|---|
 | Exact candidate head (pre-integration) | `37491157600` | `64cd8121` | **success** | 25s |
 | Integration SHA as `main` (post-integration) | `37491896332` | `64cd8121` | **success** | 44s |
-| Final closure/planning head on `main` | see §Final head | closure commit | **success** | — |
+| Closure/planning head on `main` | `37492333651` | `7d4b71c5` | **success** | 29s |
 
-The same SHA appears twice because `main` and the candidate are the same commit at the moment of integration; the two runs prove the commit under both roles, which is exactly what the plan's invariants 4 and 5 require.
+The same SHA appears twice in the first two rows because `main` and the candidate are the same commit at the moment of integration; the two runs prove the commit under both roles, which is exactly what the plan's invariants 4 and 5 require.
+
+The closure/planning commit SHA is `7d4b71c50c1c45cc9d2f57dbc9aeae1d0ebb651d`. Its run id could only be known *after* that commit existed, so the values in the third row were filled in by a follow-up planning commit rather than being predicted inside the commit they describe. That is the same self-reference documented as finding 1, handled here by not pretending otherwise. A reader reconciling this record against GitHub Actions will find exactly three M011 runs, and any commit made after `7d4b71c5` is planning-only text recording run ids, never product or evidence content.
 
 Each run executes `bash scripts/verify.sh quick` on `ubuntu-latest` with the toolchain pinned by `rust-toolchain.toml`. The lane holds no secrets and needs no router, no I2P network, no Postman account, and no live SAM peer. Two runner-image notices were emitted by GitHub and are not repository defects: a Node.js 20 deprecation notice for `actions/checkout@v4` / `actions/cache@v4`, and a notice that `ubuntu-latest` migrates to Ubuntu 26 on 2026-10-19. Neither affects the verified result; both are carried as informational findings 3 and 4.
 
