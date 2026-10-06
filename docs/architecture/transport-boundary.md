@@ -52,6 +52,9 @@ closed by upstream i2pr work:
   gateway and maps one managed-app logical service stream to one raw SAM or I2CP
   protocol connection.
 
+Both are closed on upstream `main` (`2f82c799`). The exact contract, the interface
+matrix, and the authority analysis are recorded in `docs/architecture/i2pr-integration.md`.
+
 Consequences for the adapter:
 
 - The adapter translates `MailService` into the authorized logical service stream
@@ -60,27 +63,45 @@ Consequences for the adapter:
   destination byte stream. The adapter must request a stream per operation; it
   may not assume a persistent tunnel is already open.
 - Any SAM client dependency belongs in the adapter crate at or above the seam.
-  It must not leak into `mail-proto`, `mail-store`, or `mail-domain`.
+  It must not leak into `mail-proto`, `mail-store`, or `mail-domain`. Upstream
+  assigns SAM client implementation to a separate repository and will never ship
+  it, so this repository owns the client codec itself: see `i2pr-mail-sam`,
+  introduced by milestone M010.
 - **No localhost fallback is permitted.** If the router gateway is unavailable,
   the operation fails with a transport error. A loopback listener that proxies to
   the router would reintroduce a second, unmanaged authority and a clearnet-visible
-  surface.
+  surface. Upstream's loopback SAM listener on `127.0.0.1:7656` is reachable today
+  and is deliberately not used; see `docs/architecture/i2pr-integration.md` §5.
 
 ## Execution-model stop condition
 
 `MailTransport` and `ByteStream` are synchronous today. That is a deliberate
 foundation choice, not an oversight.
 
-If the closed Plan 355 SDK turns out to expose only asynchronous channels
-(`AsyncRead`/`AsyncWrite`), then M006 **must record an architecture decision
-before** changing `MailTransport` or adding any blocking bridge. That decision has
-to choose between keeping the synchronous seam with a bounded thread handoff or
-moving the seam to async, and it must state how cancellation and deadlines
-propagate. Per `ADR-0001`, executor integration is a runtime composition
-responsibility and may not call blocking I/O on an async executor thread.
+This question was open when M008 closed, and M008 correctly declined to guess.
+It is now answered by evidence and recorded in
+`plans/adrs/ADR-0002-synchronous-transport-seam-and-async-confinement.md`.
 
-M008 does not make this choice. No ADR is added for it, because speculating
-before Plan 355 closes would document a guess as an accepted decision.
+The evidence: upstream i2pr Plan 355 closed the router app-principal gateway on
+`main` (`2b96f1bc`), and its stream-opening surface is asynchronous only —
+`AppGatewaySession::open_sam`, `open_i2cp`, `shutdown`, and `wait_closed` are all
+`pub(crate) async fn`. The stop condition was therefore triggered.
+
+ADR-0002 decides:
+
+- `MailTransport` and `ByteStream` stay synchronous and unchanged;
+- async is confined to the adapter crate at or above this seam;
+- any app channel is adapted through a **bounded** bridge that observes
+  `OperationControl`, propagates its deadline, caps one worker per open stream,
+  and fails closed with a typed transport error;
+- no crate below the seam gains an async runtime, an executor, or a blocking bridge.
+
+Per `ADR-0001`, executor integration is a runtime composition responsibility and may
+not call blocking I/O on an async executor thread, so the bridge must never run
+synchronous mail I/O on an executor worker.
+
+The consequence for this milestone's scope is unchanged: ADR-0002 decides the *shape*,
+while M006 still owns the concrete adapter and its bridge implementation.
 
 ## Stop conditions for M006
 

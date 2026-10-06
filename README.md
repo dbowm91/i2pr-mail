@@ -22,6 +22,8 @@ The workspace targets Rust 1.88+ / edition 2024, pinned exactly by `rust-toolcha
 
 The boundary guard enforces the dependency direction (`domain <- mime/proto/store <- runtime`), rejects network, filesystem, and async capability references in the lower crates, rejects untyped durable-state parameters on public store and runtime APIs, and carries its own positive controls so the guard itself is proven to reject a violation.
 
+It additionally holds the SAM 3.1 client codec (`i2pr-mail-sam`) to zero dependencies, sans-I/O source, and no inbound dependency from any crate below the transport seam.
+
 Verification is deterministic and offline: no I2P service, Postman account, router, secret, or live network fixture is required.
 
 Hosted verification runs the same command in `.github/workflows/ci.yml` on every push and pull request, with `contents: read` permissions and no secrets. Running the script locally is equivalent to the hosted lane; if the two ever disagree, that is a defect in the workflow or the script, not a reason to weaken either.

@@ -218,6 +218,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "i2pr-mail-sam"
+version = "0.1.0"
+
+[[package]]
 name = "i2pr-mail-store"
 version = "0.1.0"
 dependencies = [

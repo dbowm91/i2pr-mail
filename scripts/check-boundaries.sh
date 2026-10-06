@@ -12,6 +12,7 @@ expected = {
     "i2pr-mail-proto": {"i2pr-mail-domain"},
     "i2pr-mail-store": {"i2pr-mail-domain"},
     "i2pr-mail-runtime": {"i2pr-mail-domain", "i2pr-mail-mime", "i2pr-mail-proto", "i2pr-mail-store"},
+    "i2pr-mail-sam": set(),
 }
 def dependency_set_is_valid(actual, allowed):
     return actual == allowed
@@ -24,9 +25,9 @@ for name, allowed in expected.items():
     project = {d for d in deps if d.startswith("i2pr-mail-")}
     if not dependency_set_is_valid(project, allowed):
         raise SystemExit(f"{name}: project dependencies {sorted(project)} != {sorted(allowed)}")
-    if name in {"i2pr-mail-domain", "i2pr-mail-mime", "i2pr-mail-proto"}:
+    if name in {"i2pr-mail-domain", "i2pr-mail-mime", "i2pr-mail-proto", "i2pr-mail-sam"}:
         source = "\n".join(p.read_text() for p in (root / "crates" / name.removeprefix("i2pr-") / "src").glob("*.rs"))
-        forbidden = ("std::net", "tokio::", "async_std::", "std::fs", "std::process", "tauri", "gtk::")
+        forbidden = ("std::net", "tokio::", "async_std::", "std::fs", "std::process", "std::time", "tauri", "gtk::")
         found = [word for word in forbidden if word in source]
         if found:
             raise SystemExit(f"{name}: forbidden capability references {found}")
@@ -63,4 +64,43 @@ for crate in ("mail-store", "mail-runtime"):
                     f"{path}: untyped durable-state API {found}; use mail-domain state types"
                 )
 print("typed durable-state API check passed")
+PY
+
+python3 - <<'PY'
+import tomllib
+from pathlib import Path
+
+# The SAM 3.1 codec is the client half of the future i2pr adapter. It sits at or
+# above the transport seam and must stay a pure state machine over bytes: it
+# opens no socket, reads no clock, and touches no filesystem. It is deliberately
+# NOT a dependency of any existing crate, so nothing below the seam acquires a
+# router-protocol type.
+root = Path.cwd()
+manifest_path = root / "crates" / "mail-sam" / "Cargo.toml"
+manifest = tomllib.loads(manifest_path.read_text())
+deps = set(manifest.get("dependencies", {}))
+if deps:
+    raise SystemExit(f"i2pr-mail-sam must have no dependencies, found {sorted(deps)}")
+
+if not manifest_path.exists():
+    raise SystemExit("i2pr-mail-sam boundary guard positive control passed with no manifest")
+
+source_dir = root / "crates" / "mail-sam" / "src"
+if not source_dir.is_dir():
+    raise SystemExit("i2pr-mail-sam boundary guard positive control passed with no source")
+
+runtime_forbidden = ("async fn", "tokio::", "std::net", "std::fs", "std::process", "std::time")
+for path in sorted(source_dir.rglob("*.rs")):
+    text = path.read_text()
+    found = [word for word in runtime_forbidden if word in text]
+    if found:
+        raise SystemExit(f"{path}: SAM codec is sans-I/O but references {found}")
+
+# No crate below the transport seam may depend on the router protocol codec.
+for crate in ("mail-domain", "mail-mime", "mail-proto", "mail-store", "mail-runtime"):
+    lower = tomllib.loads((root / "crates" / crate / "Cargo.toml").read_text())
+    if "i2pr-mail-sam" in set(lower.get("dependencies", {})):
+        raise SystemExit(f"{crate} must not depend on i2pr-mail-sam")
+
+print("SAM codec sans-I/O and seam-isolation checks passed")
 PY
