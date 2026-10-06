@@ -30,7 +30,9 @@ It is not ready.
 Hard dependencies:
 
 - M005 closed;
-- post-M005 corrective M007-M009 must close.
+- post-M005 corrective M007-M009 closed;
+- M010 SAM 3.1 client codec/contract qualification closed;
+- M011 foundation branch integration/merge/cleanup must close so M006 begins from qualified mainline authority rather than the retired work branch.
 
 Interface dependencies in dbowm91/i2pr:
 
@@ -190,7 +192,8 @@ bash scripts/verify.sh quick
 
 Stop if:
 
-- M007-M009 are not closed;
+- M007-M010 are not closed;
+- M011 is not closed and the qualified foundation has not been integrated to main;
 - upstream i2pr Plan 354 or Plan 355 is not closed (both closed as of `2f82c799`);
 - no app-side trusted runtime and reachable app-channel exist to obtain authorized app transport, or the router-side gateway API is not publicly consumable by a downstream process;
 - integration requires the application to construct or be granted router-internal authority rather than receiving scoped capability from a trusted host runtime;
@@ -231,7 +234,7 @@ M006 nonetheless remains blocked, on a different and better-characterized depend
 
 M006 therefore has no authorized app transport to obtain. This is the correct security posture — an app must not be able to construct its own gateway authority — but it means the adapter cannot be written until upstream supplies the app-side runtime and a reachable channel.
 
-The local corrective lane is complete: M007, M008, and M009 are closed with accepted records and hosted verification green on run `37376165523`. Nothing in this repository can satisfy the remaining dependency.
+The local corrective lane is complete: M007, M008, and M009 are closed with accepted records, and M010 has also closed the SAM client/contract decision work. M011 is the remaining local integration-hygiene prerequisite: it moves that qualified foundation to main without rewriting closure SHAs. After M011 closes, nothing in this repository can satisfy the remaining upstream runtime dependency.
 
 When an app-side runtime milestone closes upstream, M006 must perform a fresh interface review against the closed contract rather than assuming either the current draft shape or this 2026-10-06 reading. The seam it must implement above is frozen in `docs/architecture/transport-boundary.md`, including the rule that Plan 355 grants one logical service stream per operation rather than a pre-connected arbitrary destination byte stream, and the execution-model stop condition if the closed SDK is async-only.
 
