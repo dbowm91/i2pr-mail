@@ -531,4 +531,4 @@ canonical protocol/session owner is now `dbowm91/i2pr-sam`; its M018 provider se
 the missing abstraction that lets a managed-app logical `sam` stream replace a host
 TCP SAM connection.
 
-M012 can execute while upstream i2pr Plan 385 establishes private app data/workspace and Plan 386 subsequently establishes Linux `Secured` containment. M012 does not claim secured operation merely because the wire client is complete.
+M012 can execute while upstream i2pr Plan 407 establishes the private app data root and Linux `Secured` containment together. M012 does not claim secured operation merely because the wire client is complete.
