@@ -43,7 +43,7 @@ None.
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
 | Mail backend foundation | M013 canonical SAM adoption + MailTransport composition | blocked | plans/implementation/mail-backend-foundation/013-canonical-sam-adoption-and-mailtransport-composition.md | Requires local M012 closure plus canonical dbowm91/i2pr-sam M018 closure/mainline integration. M018 itself is registered behind i2pr-sam M017. No live router or Secured backend is required for M013. |
-| Mail backend foundation | M006 live i2pr adapter qualification | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Local gate becomes M013 closure. Two upstream capability gates remain: i2pr SAM/368 must close port-aware SAM 3.3 FROM_PORT/TO_PORT behavior, and Managed native app runtime/386 must close a qualified `Secured` backend. `UnsafeDirect`, localhost SAM, and local I2PTunnel POP3/SMTP proxies are not substitutes. |
+| Mail backend foundation | M006 live i2pr adapter qualification | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Local gate becomes M013 closure. Two upstream capability gates remain: i2pr SAM/368 must close port-aware SAM 3.3 FROM_PORT/TO_PORT behavior, and Managed native app runtime/407 must close a qualified `Secured` backend. `UnsafeDirect`, localhost SAM, and local I2PTunnel POP3/SMTP proxies are not substitutes. |
 
 ## Recently closed or conditionally closed work
 
