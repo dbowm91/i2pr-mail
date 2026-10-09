@@ -66,7 +66,7 @@ M013 has two hard dependencies:
 M018 itself is currently blocked on i2pr-sam M017, which must first reconcile and merge
 the completed SAM foundation to `main`.
 
-M013 does **not** require upstream i2pr SAM/368 or managed-app/385 to implement and close
+M013 does **not** require upstream i2pr SAM/368 or managed-app/386 to implement and close
 its deterministic local composition. Those are M006 live-qualification gates.
 
 When both local/cross-repo library dependencies close, re-audit their exact public APIs
@@ -501,7 +501,7 @@ M013 closes only when:
 - no direct/loopback socket path exists;
 - dependency/boundary guards have negative evidence;
 - exact-head hosted CI is green;
-- M006's only remaining blockers are upstream i2pr SAM/368 and Managed app/385.
+- M006's only remaining blockers are upstream i2pr SAM/368 and Managed app/386.
 
 ## 14. Stop conditions
 
@@ -534,7 +534,7 @@ Record:
 - local/hosted verification;
 - security/license review;
 - unresolved findings;
-- M006 unblock audit against current upstream SAM/368 and Managed app/385.
+- M006 unblock audit against current upstream SAM/368 and Managed app/386.
 
 ## 16. Handoff notes
 
