@@ -152,14 +152,18 @@ Hosted verification (workflow `CI`, lane `bash scripts/verify.sh quick` on
 | Role | Run | Head SHA | Result |
 |---|---|---|---|
 | Implementation head | `37967058720` | `82c2fe5c4ab08cc9fcbd7027b82d9ff58b933441` | **success** |
-| Closure/planning head | TBD (this branch head after this record lands) | TBD | pending — filled by follow-up planning commit recording the green run |
+| Closure/planning head | `37967359475` | `d5e5d0915acbb0deadcdb5bac96b7e2d16409f3c` | **success** |
 
 Both runs execute the same repository-owned deterministic floor; neither
-needs a router, I2P network, Postman account, live SAM peer, or secret. The
-closure-head run id is filled by the follow-up planning commit that records
-the row above; that commit changes no production code, test, schema, API,
-dependency, or guard (planning text only), and its own green run is recorded
-in that follow-up.
+needs a router, I2P network, Postman account, live SAM peer, or secret. Run
+`37967058720` proves the implementation head; run `37967359475` proves the
+closure head (same tree as the implementation plus this record and the
+registry/roadmap/plan-status updates). The run ids were filled by this
+follow-up planning commit, which changes no production code, test, schema,
+API, dependency, or guard. This follow-up head has its own green `CI` run,
+verifiable via `gh run list --branch plans/m012-managed-app-adapter-prep`;
+the file intentionally does not cite that third run id to avoid a
+self-referential bootstrap (the same disclosure pattern as M011 finding 1).
 
 ## Guard self-proof
 
