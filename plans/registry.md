@@ -26,13 +26,13 @@ Canonical direction:
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
 | Mail backend post-M005 corrective | closed | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 closed | M007-M009 all closed; hosted verification green on run 37376165523. |
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M012 ready; M006 blocked | M001–M005 and M007–M011 are closed on main. The old M006 reachability blocker is superseded by upstream Plans 368–371 and 382–383, which now provide the real managed-app process/channel and production launch authority. M012 is the dependency-ready local corrective for managed-app framing, SAM session topology, and port-aware transport. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M012 ready; M013 blocked; M006 blocked | M001–M005 and M007–M011 are closed on main. Upstream Plans 368–371 and 382–383 clear the old app-runtime reachability blocker. M012 is ready for the independent managed-app v1 client/multiplexer. M013 is registered behind M012 and canonical i2pr-sam M018 to compose MailTransport without a second SAM implementation. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | Status | Plan | Why ready |
 |---|---|---|---|---|
-| Mail backend foundation | M012 managed-app wire + port-aware SAM transport corrective | ready | plans/implementation/mail-backend-foundation/012-managed-app-wire-and-port-aware-sam-transport-corrective.md | The managed-app application wire/runtime is concrete upstream through Plans 368–371 and 382–383, and the SAM 3.2/3.3 client grammar is stable enough for deterministic local implementation. M012 does not require a live router or a qualified OS sandbox. |
+| Mail backend foundation | M012 managed-app v1 client + multiplexer | ready | plans/implementation/mail-backend-foundation/012-managed-app-v1-client-and-multiplexer.md | The application-facing managed-app v1 runtime is concrete upstream through Plans 368–371 and 382–383. M012 implements only that independent wire/multiplexer layer and requires no live router, SAM server change, or qualified OS sandbox. |
 
 ## Active closure work
 
@@ -42,7 +42,8 @@ None.
 
 | Subsystem | Milestone | Status | Plan | Blocker |
 |---|---|---|---|---|
-| Mail backend foundation | M006 i2pr adapter | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | The former app-runtime reachability blocker is cleared upstream: i2pr Plans 368–371 and 382–383 now supply the inherited manager/apphost process chain, managed-app v1 consumer, persistent grants/catalog, and real private SAM/I2CP streams. Three gates remain: local M012 must close the application-wire/SAM-client corrective; upstream SAM/368 must close port-aware SAM 3.2+ FROM_PORT/TO_PORT semantics because Postman uses nonzero I2P ports; upstream Managed native app runtime/385 must close a qualified `Secured` backend because M006 forbids `UnsafeDirect` and localhost fallbacks. |
+| Mail backend foundation | M013 canonical SAM adoption + MailTransport composition | blocked | plans/implementation/mail-backend-foundation/013-canonical-sam-adoption-and-mailtransport-composition.md | Requires local M012 closure plus canonical dbowm91/i2pr-sam M018 closure/mainline integration. M018 itself is registered behind i2pr-sam M017. No live router or Secured backend is required for M013. |
+| Mail backend foundation | M006 live i2pr adapter qualification | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | Local gate becomes M013 closure. Two upstream capability gates remain: i2pr SAM/368 must close port-aware SAM 3.3 FROM_PORT/TO_PORT behavior, and Managed native app runtime/385 must close a qualified `Secured` backend. `UnsafeDirect`, localhost SAM, and local I2PTunnel POP3/SMTP proxies are not substitutes. |
 
 ## Recently closed or conditionally closed work
 
