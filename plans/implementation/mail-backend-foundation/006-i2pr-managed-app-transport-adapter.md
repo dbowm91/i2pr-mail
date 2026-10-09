@@ -2,7 +2,7 @@
 
 Status: blocked
 
-Repository baseline: original planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; corrected on post-M005 planning head; execute only after M007-M009 closure and an upstream app-side managed-app runtime milestone
+Repository baseline: original planning baseline ec8056a75ccba628994aa7610ac5a07cd3d4a986; corrected after M011/M012 planning re-audit. Execute only after M012 closure plus upstream SAM/368 and Managed native app runtime/385 closure.
 
 Source roadmap:
 
@@ -31,26 +31,27 @@ Hard dependencies:
 
 - M005 closed;
 - post-M005 corrective M007-M009 closed;
-- M010 SAM 3.1 client codec/contract qualification closed;
-- M011 foundation branch integration/merge/cleanup must close so M006 begins from qualified mainline authority rather than the retired work branch.
+- M010 SAM client foundation closed;
+- M011 foundation integration closed;
+- M012 managed-app wire + port-aware SAM corrective must close.
 
 Interface dependencies in dbowm91/i2pr:
 
-- managed-native-app Plans 345, 349, 352, 353, 354, and 355 are closed (verified 2026-10-06 on `main` `2f82c799`);
-- Plan 354 closed the listener-independent SAM/I2CP private connection seams;
-- Plan 355 closed the router app-principal gateway and froze the authorized SAM/I2CP service-stream contract, but its gateway API is `pub(crate)` to `i2pr-daemon` and no production caller exists;
-- an app-side trusted runtime milestone (package/lifecycle supervision, AppManager, and the app-channel transport that can authenticate a process and supply `AppGatewayAuthorization`) must be planned and closed upstream. It is currently "eligible for a future plan" and unregistered;
-- any required downstream SAM client adapter semantics must be stable enough for i2pr-mail.
+- managed-app Plans 345, 349, 352–355, 368–371 and 382–383 are closed on current upstream main `acd752b7`;
+- Plans 368/369 provide the inherited daemon↔manager bridge, `i2pr-appd`, `i2pr-apphost`, the application-facing managed-app v1 stdin/stdout channel, and real private SAM/I2CP logical streams;
+- Plans 382/383 provide signed immutable packages, persistent publisher trust/grants/exact selection, offline administration, and the production launch catalog;
+- upstream SAM/368 must close SAM 3.3 including inherited 3.2+ `FROM_PORT`/`TO_PORT` STREAM behavior; reference Postman services use nonzero I2P ports 110 and 25, so current SAM 3.1 is insufficient;
+- upstream Managed native app runtime/385 must close a qualified `Secured` launch backend. Current `UnsafeDirect` is ordinary host networking and cannot satisfy this plan's no-direct-network acceptance boundary.
 
 Proposal 170 administrative completion is not a blanket prerequisite unless the final app gateway specifically and narrowly requires it for an app-owned resource. A general administrator credential is forbidden.
 
 ## 3. Current implementation evidence
 
-The original Plan-345-only description is stale. Upstream i2pr has now closed Plans 345, 349, 352, 353, 354, and 355. Plan 354 owns listener-independent private SAM/I2CP connection drivers, and Plan 355 owns the trusted AppPrincipal/effective-capability router gateway built on them.
+The Plan-355-only description is now stale. Upstream has closed the missing application-side owners. Plan 369's production path is `i2pr-daemon -> inherited manager channel -> i2pr-appd -> i2pr-apphost -> application managed-app v1 stdin/stdout`; Plan 383 adds persistent trusted package/grant/catalog authority and restart-safe production launches. Black-box qualification already carries SAM and I2CP bytes through the private gateway without a loopback listener.
 
-Plan 355's frozen mapping is one managed-app logical stream to one raw SAM or I2CP protocol connection. It does not promise a pre-connected arbitrary I2P destination stream. M006 must therefore begin by reviewing the exact closed Plan-355 interface and deciding the smallest adapter above MailTransport. If a SAM client layer or sync/async execution-model change is required, record that decision before implementation rather than leaking it into lower mail crates.
+M006 therefore must not consume the internal `pub(crate)` `AppGatewaySession` API or add an i2pr Rust dependency. Its downstream contract is the language-neutral managed-app v1 application channel. M012 owns the local client codec/multiplexer and SAM transport correction above that wire contract.
 
-Plan 355 closed the router half only. Its closure record states it does not implement "a usable third-party application capability", and `AppGatewaySession`, `AppGatewayAuthorization`, `AppGatewayLimits`, and `AppGatewayComposition` are all `pub(crate)` in `crates/i2pr-daemon/src/app_gateway.rs` under a module-level `#![allow(dead_code)]` reading "No production app-runtime caller exists yet". `AppGatewayAuthorization::from_trusted_composition` is deliberately non-serializable and unreachable off-wire, so an application cannot mint its own authority. i2pr-mail therefore cannot integrate against Plan 355 as shipped: there is no app-side channel, no process authentication, and no public surface to adapt.
+The remaining upstream limitations are capability limitations, not reachability limitations. Current `Secured` launches fail before exec because no qualified OS sandbox exists, and current i2pr advertises SAM 3.1 only. Reference Postman client tunnels target `pop.postman.i2p:110` and `smtp.postman.i2p:25`; SAM 3.1 cannot express those nonzero destination ports. Upstream Managed app/385 owns secured Linux containment, and SAM/368 owns SAM 3.3 including the inherited port semantics.
 
 ## 4. Invariants that must not regress
 
@@ -67,13 +68,13 @@ Plan 355 closed the router half only. Its closure record states it does not impl
 
 ### In scope
 
-- dependency/adaptation to the released/stable i2pr app SDK/protocol component;
-- application manifest capability declarations required for mail;
-- implement MailTransport for logical POP3 and SMTP I2P services;
-- destination resolution/connect semantics through the authorized i2pr path;
-- lifecycle/cancellation mapping;
-- app health/diagnostic mapping as appropriate;
-- deterministic adapter tests plus real/local integration smoke where the i2pr project supports it.
+- consume the M012 application-role managed-app v1 client/multiplexer;
+- application package/manifest capability declarations required for mail;
+- production composition of MailTransport for logical POP3 and SMTP I2P services;
+- port-aware SAM session establishment through the authorized app channel;
+- map the Plan-385 secured launch bootstrap identity/data-root environment into the adapter composition;
+- lifecycle/cancellation and host health/diagnostic mapping;
+- real/local integration smoke using the qualified Secured path and real private SAM stream support.
 
 ### Explicitly out of scope
 
@@ -89,9 +90,9 @@ Plan 355 closed the router half only. Its closure record states it does not impl
 
 ### Interface review first
 
-At execution start, inspect the exact closed i2pr contract and gateway. Freeze which operation produces the duplex I2P stream required by MailTransport.
+At execution start, inspect the exact closed upstream SAM/368 and Managed app/385 contracts plus the M012 closure. Freeze their exact commits and confirm the application-facing managed-app v1 framing has not drifted.
 
-If i2pr exposes SAM or I2CP as a capability stream rather than a direct destination stream, prefer a small project-owned adapter or separately maintained Rust SAM library over leaking that protocol into mail-domain/proto/store.
+Do not adapt private router types. M006 composes the already-local managed-app/SAM adapter against the inherited application channel exposed by the secured runtime.
 
 ### Adapter
 
@@ -114,21 +115,21 @@ Record exact i2pr commit/tag/API and map it to MailTransport.
 
 Acceptance evidence: interface matrix and explicit authority analysis.
 
-### B — Adapter implementation
+### B — Secured production composition
 
-Implement open/cancel/close mapping with typed errors.
+Bind the M012 adapter to the managed-app process bootstrap under Plan 385, including the trusted app/instance identity and private persistent data location. Do not change lower mail APIs.
 
-Acceptance evidence: deterministic fake app-channel/gateway tests.
+Acceptance evidence: the mail process starts under `Secured`, completes managed-app hello, observes its effective `sam` grant, and opens no host socket.
 
-### C — Integration smoke
+### C — Port-aware integration smoke
 
-Run against supported i2pr local/test environment and synthetic or actual reachable I2P service as appropriate.
+Run against supported i2pr local/test infrastructure with SAM/368 enabled. Establish the retained SAM session-control connection and separate POP3/SMTP STREAM connections using `TO_PORT=110` and `TO_PORT=25`.
 
-Acceptance evidence: POP3 and SMTP stream establishment through app authority.
+Acceptance evidence: real POP3 and SMTP protocol bytes cross the private managed-app path; no 7656/7659/7660 listener is enabled or contacted.
 
 ### D — Negative authority qualification
 
-Prove secured operation has no direct/loopback fallback and denied/missing capability fails closed.
+Prove secured operation has no direct/public/LAN/loopback fallback, a missing/denied `sam` grant fails before SAM allocation, and a SAM peer without the required port-capable version fails rather than silently connecting to port 0.
 
 ## 8. Failure, cancellation, restart, and contention semantics
 
@@ -192,13 +193,12 @@ bash scripts/verify.sh quick
 
 Stop if:
 
-- M007-M010 are not closed;
-- M011 is not closed and the qualified foundation has not been integrated to main;
-- upstream i2pr Plan 354 or Plan 355 is not closed (both closed as of `2f82c799`);
-- no app-side trusted runtime and reachable app-channel exist to obtain authorized app transport, or the router-side gateway API is not publicly consumable by a downstream process;
-- integration requires the application to construct or be granted router-internal authority rather than receiving scoped capability from a trusted host runtime;
-- no stable router-side app-principal SAM/I2CP service-stream contract exists;
-- integration requires UnsafeDirect or localhost socket fallback;
+- M007-M012 are not closed;
+- upstream SAM/368 is not closed with port-aware managed-app STREAM evidence;
+- upstream Managed native app runtime/385 is not closed with a qualified `Secured` profile;
+- the application-facing managed-app v1 contract has drifted incompatibly from the M012 client;
+- integration requires the application to construct router-internal authority rather than receiving scoped capability from the trusted runtime;
+- integration requires `UnsafeDirect` or localhost socket fallback;
 - integration requires handing the app a general Proposal 170 administrator credential;
 - the only available surface is the intentionally reserved/underspecified generic brokered_tcp operation;
 - upstream API churn would require leaking i2pr internals into lower mail crates.
@@ -209,7 +209,7 @@ Exact upstream commit/tag, app capability matrix, adapter mapping, POP3/SMTP int
 
 ## 16. Handoff notes
 
-This plan is deliberately blocked. Do not implement against the known-pre-runtime Plan-345 shape merely to make progress; M001-M005 are the progress path until upstream stabilizes.
+This plan remains blocked, but for materially different reasons than its original registration. Do not use the historical Plan-355-only reachability analysis as current implementation guidance. M012 is the local progress path; upstream SAM/368 and Managed app/385 are the two external capability gates.
 
 ### Current external dependency evidence (re-audited 2026-10-05 during M009, re-audited again 2026-10-06)
 
@@ -236,7 +236,7 @@ M006 therefore has no authorized app transport to obtain. This is the correct se
 
 The local corrective lane is complete: M007, M008, and M009 are closed with accepted records, and M010 has also closed the SAM client/contract decision work. M011 is the remaining local integration-hygiene prerequisite: it moves that qualified foundation to main without rewriting closure SHAs. After M011 closes, nothing in this repository can satisfy the remaining upstream runtime dependency.
 
-When an app-side runtime milestone closes upstream, M006 must perform a fresh interface review against the closed contract rather than assuming either the current draft shape or this 2026-10-06 reading. The seam it must implement above is frozen in `docs/architecture/transport-boundary.md`, including the rule that Plan 355 grants one logical service stream per operation rather than a pre-connected arbitrary destination byte stream, and the execution-model stop condition if the closed SDK is async-only.
+The 2026-10-06 app-runtime wait is now superseded forward by M012 planning. The app-side runtime exists and is exercised. M006 must instead re-read the exact closed SAM/368 and Managed app/385 interfaces, then consume M012's local adapter. The SAM lifetime rule is also corrected: one long-lived SESSION CREATE control connection owns the SAM STREAM session while each protocol connection uses its own managed-app `sam` logical stream for HELLO + STREAM CONNECT.
 
 - Registry: https://github.com/dbowm91/i2pr/blob/main/plans/registry.md
 - Managed app runtime roadmap: https://github.com/dbowm91/i2pr/blob/main/plans/subsystems/managed-native-app-runtime-roadmap.md
