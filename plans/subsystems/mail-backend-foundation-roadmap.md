@@ -69,7 +69,7 @@ The qualified foundation is on `main`. M011 integrated `codex/foundation-plannin
 
 The former M006 reachability blocker is now cleared upstream. Re-audited against i2pr `main` `acd752b7`: Plans 368–371 and 382–383 supply the inherited daemon↔manager channel, `i2pr-appd`, `i2pr-apphost`, the managed-app v1 application consumer, persistent signed-package trust/grants/catalog, and black-box private SAM/I2CP streams with no loopback listener.
 
-That progress exposed a cleaner cross-repository integration sequence rather than making M006 immediately executable. M012 now owns only the independent managed-app v1 application client/multiplexer. The dedicated `dbowm91/i2pr-sam` repository already owns the correct SAM STREAM control/data connection lifecycle and typed FROM_PORT/TO_PORT behavior; its M018 is registered to remove concrete TCP coupling through an injected reliable-connection provider after M017 merges the SAM foundation. M013 is therefore registered behind M012 + i2pr-sam M018 to adopt the canonical SAM client, retire the temporary mail-local SAM implementation, and compose the synchronous MailTransport. Final M006 then remains gated only on M013 plus upstream i2pr SAM/368 port-aware server support and Managed native app runtime/385's qualified Linux `Secured` backend; `UnsafeDirect` and localhost proxies remain forbidden.
+That progress exposed a cleaner cross-repository integration sequence rather than making M006 immediately executable. M012 now owns only the independent managed-app v1 application client/multiplexer. The dedicated `dbowm91/i2pr-sam` repository already owns the correct SAM STREAM control/data connection lifecycle and typed FROM_PORT/TO_PORT behavior; its M018 is registered to remove concrete TCP coupling through an injected reliable-connection provider after M017 merges the SAM foundation. M013 is therefore registered behind M012 + i2pr-sam M018 to adopt the canonical SAM client, retire the temporary mail-local SAM implementation, and compose the synchronous MailTransport. Final M006 then remains gated only on M013 plus upstream i2pr SAM/368 port-aware server support and Managed native app runtime/386's qualified Linux `Secured` backend; `UnsafeDirect` and localhost proxies remain forbidden.
 
 ## 5. Target architecture
 
@@ -140,7 +140,7 @@ M001 workspace/domain/boundaries
                     i2pr-sam M017 -> M018            M006 live qualification
                                                      also requires upstream i2pr:
                                                      - SAM/368 port-aware SAM 3.3
-                                                     - managed-app/385 Linux Secured
+                                                     - managed-app/386 Linux Secured
 
 Dependency classification:
 
@@ -153,7 +153,7 @@ Dependency classification:
 - M011 hard-depends on all completed local foundation work through M010 and on an exact-head green integration candidate. It owned only history-preserving mainline integration, qualification, planning reconciliation, and work-branch cleanup, and is closed. It required no production change.
 - M012 hard-depends locally on M010/M011 closure and on the now-concrete managed-app v1 application wire contract. Those dependencies are satisfied. It implements the independent application-role managed-app client/multiplexer only; it requires neither a live router, SAM implementation, nor sandbox and is ready.
 - M013 hard-depends on M012 closure and on `dbowm91/i2pr-sam` M018 closure/mainline integration. M018 is registered but blocked on i2pr-sam M017's foundation reconciliation/merge. M013 then adopts the canonical SAM client, supplies each SAM connection through M012, composes synchronous MailTransport, and retires `i2pr-mail-sam`. It requires no live i2pr or Secured backend and remains blocked only on those two implementation dependencies.
-- M006 hard-depends locally on M013 closure. Its former upstream process/channel dependency is satisfied by i2pr Plans 368–371 and 382–383. Two upstream capability dependencies remain: i2pr SAM/368 must close port-aware SAM 3.3 support, and Managed native app runtime/385 must close the first qualified `Secured` backend.
+- M006 hard-depends locally on M013 closure. Its former upstream process/channel dependency is satisfied by i2pr Plans 368–371 and 382–383. Two upstream capability dependencies remain: i2pr SAM/368 must close port-aware SAM 3.3 support, and Managed native app runtime/386 must close the first qualified `Secured` backend.
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
 ## 7. Milestones
@@ -204,7 +204,7 @@ Class: capability/integration.
 
 Objective: replace fake transport with the stable authorized i2pr application transport without changing mail-domain/protocol/store contracts.
 
-Blocker: M013 closure plus two upstream capabilities. The old app-runtime reachability blocker is closed by i2pr Plans 368–371 and 382–383. M013 owns the completed local production adapter stack using canonical i2pr-sam. Final mail qualification still requires upstream i2pr SAM/368 to provide nonzero I2P `TO_PORT` semantics and upstream Managed native app runtime/385 to provide a qualified `Secured` launch profile. Current `UnsafeDirect` operation is not an acceptable substitute.
+Blocker: M013 closure plus two upstream capabilities. The old app-runtime reachability blocker is closed by i2pr Plans 368–371 and 382–383. M013 owns the completed local production adapter stack using canonical i2pr-sam. Final mail qualification still requires upstream i2pr SAM/368 to provide nonzero I2P `TO_PORT` semantics and upstream Managed native app runtime/386 to provide a qualified `Secured` launch profile. Current `UnsafeDirect` operation is not an acceptable substitute.
 
 Exit: real adapter smoke/qualification plus negative evidence that no direct/loopback fallback is required.
 
@@ -246,7 +246,7 @@ Objective: consume the closed `dbowm91/i2pr-sam` M018 injected-connection provid
 
 Blocker: M012 closure + i2pr-sam M018 closure/mainline integration. M018 is itself registered behind i2pr-sam M017.
 
-Exit: all deterministic production adapter behavior is local and closed, one canonical SAM implementation remains, and M006's only blockers are upstream i2pr SAM/368 and Managed native app runtime/385.
+Exit: all deterministic production adapter behavior is local and closed, one canonical SAM implementation remains, and M006's only blockers are upstream i2pr SAM/368 and Managed native app runtime/386.
 
 ## 8. Cross-cutting requirements
 
@@ -306,7 +306,7 @@ This roadmap closes only when M001-M006, the post-M005 M007-M009 corrective sequ
 | M003 | closed | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | plans/closure/mail-backend-foundation/003-status.md | none |
 | M004 | closed | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | plans/closure/mail-backend-foundation/004-status.md | none |
 | M005 | closed | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | plans/closure/mail-backend-foundation/005-status.md | none |
-| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M013 closure + upstream i2pr SAM/368 port-aware SAM 3.3 + upstream managed-app/385 qualified Linux Secured backend |
+| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M013 closure + upstream i2pr SAM/368 port-aware SAM 3.3 + upstream managed-app/386 qualified Linux Secured backend |
 | M007 | closed | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | plans/closure/mail-backend-foundation/007-status.md | none |
 | M008 | closed | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | plans/closure/mail-backend-foundation/008-status.md | none |
 | M009 | closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | plans/closure/mail-backend-foundation/009-status.md | none |
