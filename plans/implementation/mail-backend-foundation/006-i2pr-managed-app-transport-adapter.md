@@ -73,7 +73,7 @@ The remaining upstream limitations are capability limitations, not reachability 
 - application package/manifest capability declarations required for mail;
 - production composition of MailTransport for logical POP3 and SMTP I2P services;
 - port-aware SAM session establishment through the authorized app channel;
-- map the Plan-386 secured launch bootstrap identity/data-root environment into the adapter composition;
+- map Plan 383's trusted launch identity plus Plan 385's app data/cache/runtime paths into the adapter composition executed under Plan 386 `Secured` containment;
 - lifecycle/cancellation and host health/diagnostic mapping;
 - real/local integration smoke using the qualified Secured path and real private SAM stream support.
 
@@ -118,7 +118,7 @@ Acceptance evidence: interface matrix and explicit authority analysis.
 
 ### B — Secured production composition
 
-Bind the M013 adapter stack to the managed-app process bootstrap under Plan 385, including the trusted app/instance identity and private persistent data location. Do not change lower mail APIs.
+Bind the M013 adapter stack to the managed-app process bootstrap under Plan 386, consuming the trusted app/instance identity already supplied by the runtime and the Plan-385 private data/cache/runtime paths. Do not change lower mail APIs.
 
 Acceptance evidence: the mail process starts under `Secured`, completes managed-app hello, observes its effective `sam` grant, and opens no host socket.
 
