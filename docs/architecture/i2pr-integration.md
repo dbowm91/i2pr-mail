@@ -6,6 +6,21 @@ It does not implement `MailTransport`, and it does not claim the adapter is unbl
 
 The adapter itself remains blocked. See §4.
 
+> M012 supersession (2026-10-09): the §1 rows stating "no app-side runtime or
+> channel" and "no reachable gateway" describe the 2026-10-06 upstream state
+> (Plans 354/355 router-side only) and are superseded forward by upstream
+> managed-app Plans 368–371 (daemon↔manager bridge, `i2pr-appd`,
+> `i2pr-apphost`, v1 application consumer, startup) and Plans 382–383
+> (signed packages, trust/grants, catalog, autostart). The application-facing
+> managed-app v1 wire contract is now concrete and is implemented locally by
+> M012 (`i2pr-mail-managed-app`: trusted launch identity, handshake, bounded
+> frames, hello/capabilities, multiplexed logical `sam` streams over injected
+> async I/O). M013 composes that client with canonical `i2pr-sam` M018 into
+> synchronous `MailTransport`; M006 remains gated on M013 plus upstream SAM/368
+> (port-aware 3.3) and managed-app/407 (qualified Linux `Secured`). The table
+> below is preserved as historical evidence and must not be read as current
+> reachability guidance. See `plans/closure/mail-backend-foundation/012-status.md`.
+
 ## 1. Status summary
 
 | Question | Answer | Evidence |

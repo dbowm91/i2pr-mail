@@ -4,6 +4,17 @@ This document freezes the seam that the future i2pr adapter (M006) implements. I
 describes the contract only; it deliberately does not choose an execution model
 that upstream has not closed yet.
 
+> M012 note (2026-10-09): the managed-app logical-stream seam below
+> `MailTransport` is now concrete. M012 (`i2pr-mail-managed-app`) owns the
+> application-role v1 framing over injected async I/O and exposes authorized
+> logical `sam` streams as `AsyncRead + AsyncWrite` values behind a bounded
+> multiplexer (one reader, one serialized writer, ≤64 pending requests, ≤128
+> live streams, bounded per-stream/aggregate queues, fail-closed teardown).
+> `MailTransport`/`ByteStream` stay synchronous per ADR-0002; the sync/async
+> bridge and canonical SAM composition belong to M013. No lower crate gains an
+> async or managed-app dependency. See
+> `plans/closure/mail-backend-foundation/012-status.md`.
+
 ## What the runtime asks for
 
 `MailTransport` is the single authorized remote I/O path in the backend. It is

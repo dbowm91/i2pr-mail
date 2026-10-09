@@ -13,6 +13,7 @@ expected = {
     "i2pr-mail-store": {"i2pr-mail-domain"},
     "i2pr-mail-runtime": {"i2pr-mail-domain", "i2pr-mail-mime", "i2pr-mail-proto", "i2pr-mail-store"},
     "i2pr-mail-sam": set(),
+    "i2pr-mail-managed-app": set(),
 }
 def dependency_set_is_valid(actual, allowed):
     return actual == allowed
@@ -101,6 +102,71 @@ for crate in ("mail-domain", "mail-mime", "mail-proto", "mail-store", "mail-runt
     lower = tomllib.loads((root / "crates" / crate / "Cargo.toml").read_text())
     if "i2pr-mail-sam" in set(lower.get("dependencies", {})):
         raise SystemExit(f"{crate} must not depend on i2pr-mail-sam")
+    if "i2pr-mail-managed-app" in set(lower.get("dependencies", {})):
+        raise SystemExit(f"{crate} must not depend on i2pr-mail-managed-app")
 
 print("SAM codec sans-I/O and seam-isolation checks passed")
+PY
+
+python3 - <<'PY'
+import tomllib
+from pathlib import Path
+
+# The managed-app v1 client/multiplexer is adapter-layer async code over
+# injected byte I/O. It must speak only the documented application-role wire
+# contract: no direct network, DNS, loopback, filesystem, process-launch, or
+# router-control authority, no ambient stdio/env identity, and no unbounded
+# channel constructor. Lower crates must not gain a dependency on it.
+root = Path.cwd()
+manifest_path = root / "crates" / "mail-managed-app" / "Cargo.toml"
+manifest = tomllib.loads(manifest_path.read_text())
+deps = set(manifest.get("dependencies", {}))
+project = {d for d in deps if d.startswith("i2pr-mail-")}
+if project:
+    raise SystemExit(f"i2pr-mail-managed-app must have no project dependencies, found {sorted(project)}")
+allowed_external = {"serde", "serde_json", "thiserror", "tokio"}
+external = {d for d in deps if not d.startswith("i2pr-mail-")}
+unexpected = {d for d in external if d not in allowed_external}
+if unexpected:
+    raise SystemExit(f"i2pr-mail-managed-app has unexpected dependencies {sorted(unexpected)}")
+
+if not manifest_path.exists():
+    raise SystemExit("managed-app boundary guard positive control passed with no manifest")
+
+source_dir = root / "crates" / "mail-managed-app" / "src"
+if not source_dir.is_dir():
+    raise SystemExit("managed-app boundary guard positive control passed with no source")
+
+# Async is confined here by design (ADR-0002 allows exactly one adapter owner),
+# so `tokio::` alone is not forbidden. Only ambient/direct authority and
+# unbounded construction are rejected.
+authority_forbidden = (
+    "std::net",
+    "tokio::net",
+    "tokio::fs",
+    "std::fs",
+    "std::process",
+    "tokio::process",
+    "std::env",
+    "std::os::",
+    "std::time",
+    "unbounded_channel",
+    "TcpStream",
+    "UdpSocket",
+    "lookup_host",
+)
+for path in sorted(source_dir.rglob("*.rs")):
+    text = path.read_text()
+    found = [word for word in authority_forbidden if word in text]
+    if found:
+        raise SystemExit(f"{path}: managed-app client has direct authority references {found}")
+
+# Lower crates must not depend on the adapter; the adapter must not depend on
+# lower mail crates (it speaks only the wire contract).
+for crate in ("mail-domain", "mail-mime", "mail-proto", "mail-store", "mail-runtime", "mail-sam"):
+    lower = tomllib.loads((root / "crates" / crate / "Cargo.toml").read_text())
+    if "i2pr-mail-managed-app" in set(lower.get("dependencies", {})):
+        raise SystemExit(f"{crate} must not depend on i2pr-mail-managed-app")
+
+print("managed-app adapter authority and seam-isolation checks passed")
 PY

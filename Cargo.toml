@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/mail-domain", "crates/mail-mime", "crates/mail-proto", "crates/mail-store", "crates/mail-runtime", "crates/mail-sam"]
+members = ["crates/mail-domain", "crates/mail-mime", "crates/mail-proto", "crates/mail-store", "crates/mail-runtime", "crates/mail-sam", "crates/mail-managed-app"]
 
 [workspace.package]
 version = "0.1.0"
@@ -10,7 +10,9 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 thiserror = "2"
+tokio = { version = "1", features = ["io-util", "sync", "rt", "time", "macros"] }
 mail-parser = "0.11.9"
 mail-builder = { version = "1.0.0", default-features = false }
 rusqlite = { version = "0.40.2", features = ["bundled"] }

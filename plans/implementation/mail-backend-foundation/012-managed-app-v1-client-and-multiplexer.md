@@ -1,6 +1,6 @@
 # Mail Backend Foundation Milestone 012 — Managed-App V1 Application Client and Multiplexer
 
-Status: ready for handoff
+Status: active — implementation in progress on `plans/m012-managed-app-adapter-prep`
 
 Repository baseline:
 
