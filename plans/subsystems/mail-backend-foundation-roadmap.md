@@ -69,7 +69,7 @@ The qualified foundation is on `main`. M011 integrated `codex/foundation-plannin
 
 The former M006 reachability blocker is now cleared upstream. Re-audited against i2pr `main` `acd752b7`: Plans 368–371 and 382–383 supply the inherited daemon↔manager channel, `i2pr-appd`, `i2pr-apphost`, the managed-app v1 application consumer, persistent signed-package trust/grants/catalog, and black-box private SAM/I2CP streams with no loopback listener.
 
-That progress exposed two narrower integration gaps rather than making M006 immediately executable. First, M010 modeled a SAM STREAM session as if SESSION CREATE and STREAM CONNECT lived on one connection; actual SAM ownership retains the SESSION CREATE control connection and uses separate SAM connections for STREAM CONNECT. Second, reference Postman tunnels target nonzero I2P ports 110 and 25, while current i2pr SAM 3.1 has no FROM_PORT/TO_PORT semantics. M012 is therefore ready as a local corrective/integration-foundation milestone. Final M006 remains gated on upstream SAM/368 port-aware 3.3 support and Managed native app runtime/385's qualified Linux `Secured` backend; `UnsafeDirect` and localhost proxies remain forbidden.
+That progress exposed a cleaner cross-repository integration sequence rather than making M006 immediately executable. M012 now owns only the independent managed-app v1 application client/multiplexer. The dedicated `dbowm91/i2pr-sam` repository already owns the correct SAM STREAM control/data connection lifecycle and typed FROM_PORT/TO_PORT behavior; its M018 is registered to remove concrete TCP coupling through an injected reliable-connection provider after M017 merges the SAM foundation. M013 is therefore registered behind M012 + i2pr-sam M018 to adopt the canonical SAM client, retire the temporary mail-local SAM implementation, and compose the synchronous MailTransport. Final M006 then remains gated only on M013 plus upstream i2pr SAM/368 port-aware server support and Managed native app runtime/385's qualified Linux `Secured` backend; `UnsafeDirect` and localhost proxies remain forbidden.
 
 ## 5. Target architecture
 
@@ -131,12 +131,16 @@ M001 workspace/domain/boundaries
                                   M011 foundation branch integration
                                    |
                                    v
-                                  M012 managed-app wire + SAM corrective
+                                  M012 managed-app v1 client/multiplexer
                                    |
-                                   +--> M006 live i2pr adapter qualification
-                                        also requires upstream:
-                                        - SAM/368 port-aware SAM 3.3
-                                        - managed-app/385 Linux Secured
+                                   v
+                                  M013 canonical i2pr-sam + MailTransport
+                                   ^                         |
+                                   |                         v
+                    i2pr-sam M017 -> M018            M006 live qualification
+                                                     also requires upstream i2pr:
+                                                     - SAM/368 port-aware SAM 3.3
+                                                     - managed-app/385 Linux Secured
 
 Dependency classification:
 
@@ -147,8 +151,9 @@ Dependency classification:
 - M007, M008, and M009 are closed. Hosted verification is green on run 37376165523; runs 37372987942 and 37373787767 were cancelled with no runner during a GitHub Actions outage and executed zero steps.
 - M010 hard-depends on M009 closure and on ADR-0002. It depends on no upstream milestone: the SAM 3.1 client codec is the client half of the adapter, and upstream `specs/references/portable-service-tunnel-sam-adapter-handoff.md` assigns SAM client implementation to a separate repository that i2pr will never ship. M010 is closed with no remaining local work.
 - M011 hard-depends on all completed local foundation work through M010 and on an exact-head green integration candidate. It owned only history-preserving mainline integration, qualification, planning reconciliation, and work-branch cleanup, and is closed. It required no production change.
-- M012 hard-depends locally on M010/M011 closure and on the now-concrete managed-app v1 wire contract. Those dependencies are satisfied. It corrects the SAM session-lifetime model, implements the application-role managed-app client/multiplexer, and adds client-side SAM 3.2+ port semantics using deterministic fake-host evidence; it requires neither a live router nor a sandbox and is ready.
-- M006 hard-depends locally on M012 closure. Its former upstream process/channel dependency is satisfied by i2pr Plans 368–371 and 382–383. Two upstream capability dependencies remain: SAM/368 must close port-aware SAM 3.3 support, and Managed native app runtime/385 must close the first qualified `Secured` backend. M006 stays blocked until all three gates are closed.
+- M012 hard-depends locally on M010/M011 closure and on the now-concrete managed-app v1 application wire contract. Those dependencies are satisfied. It implements the independent application-role managed-app client/multiplexer only; it requires neither a live router, SAM implementation, nor sandbox and is ready.
+- M013 hard-depends on M012 closure and on `dbowm91/i2pr-sam` M018 closure/mainline integration. M018 is registered but blocked on i2pr-sam M017's foundation reconciliation/merge. M013 then adopts the canonical SAM client, supplies each SAM connection through M012, composes synchronous MailTransport, and retires `i2pr-mail-sam`. It requires no live i2pr or Secured backend and remains blocked only on those two implementation dependencies.
+- M006 hard-depends locally on M013 closure. Its former upstream process/channel dependency is satisfied by i2pr Plans 368–371 and 382–383. Two upstream capability dependencies remain: i2pr SAM/368 must close port-aware SAM 3.3 support, and Managed native app runtime/385 must close the first qualified `Secured` backend.
 - Frontend work is soft/deferred and begins only after M005 establishes a stable backend surface.
 
 ## 7. Milestones
@@ -199,7 +204,7 @@ Class: capability/integration.
 
 Objective: replace fake transport with the stable authorized i2pr application transport without changing mail-domain/protocol/store contracts.
 
-Blocker: M012 closure plus two upstream capabilities. The old app-runtime reachability blocker is closed by i2pr Plans 368–371 and 382–383. Final mail integration still requires upstream SAM/368 to provide nonzero I2P `TO_PORT` semantics and upstream Managed native app runtime/385 to provide a qualified `Secured` launch profile. Current `UnsafeDirect` operation is not an acceptable substitute.
+Blocker: M013 closure plus two upstream capabilities. The old app-runtime reachability blocker is closed by i2pr Plans 368–371 and 382–383. M013 owns the completed local production adapter stack using canonical i2pr-sam. Final mail qualification still requires upstream i2pr SAM/368 to provide nonzero I2P `TO_PORT` semantics and upstream Managed native app runtime/385 to provide a qualified `Secured` launch profile. Current `UnsafeDirect` operation is not an acceptable substitute.
 
 Exit: real adapter smoke/qualification plus negative evidence that no direct/loopback fallback is required.
 
@@ -223,15 +228,25 @@ Exit: all evidence-bearing commits remain reachable at their original SHAs from 
 
 Result: closed. `main` moved `9f2cb7c7` → `64cd8121` by a single non-forced fast-forward with no rewrite of any cited commit; candidate CI `37491157600` and integration-main CI `37491896332` both green; the work branch was deleted after the closure record landed. See `plans/closure/mail-backend-foundation/011-status.md`.
 
-### M012 — Managed-app wire client and port-aware SAM transport corrective
+### M012 — Managed-app v1 application client and multiplexer
 
-Class: corrective invariant + integration infrastructure.
+Class: corrective integration infrastructure + invariant.
 
-Objective: replace the stale pre-runtime assumptions in M006/M010 with the real managed-app v1 stdin/stdout contract, implement a bounded synchronous logical-stream multiplexer, correct SAM STREAM control/data connection ownership, and add client-side SAM 3.2+ FROM_PORT/TO_PORT semantics.
+Objective: implement the independent application side of i2pr managed-app v1 over injected async byte I/O: trusted launch-context parsing, handshake/hello/effective-capability establishment, bounded frame/control codecs, request/stream correlation, and isolated logical service streams.
 
-Why ready: the local foundation through M011 is closed and upstream Plans 368–371/382–383 provide a concrete application-facing wire contract. M012 uses deterministic fake-host evidence and does not require upstream sandbox or SAM-server completion.
+Why ready: the local foundation through M011 is closed and upstream Plans 368–371/382–383 provide a concrete application-facing wire contract. M012 uses deterministic fake-host evidence and requires neither a live router, SAM implementation, nor qualified OS sandbox.
 
-Exit: managed-app framing/multiplexing and corrected port-aware SAM client behavior are closed locally; synthetic POP3/SMTP flows pass through the adapter; M006's only blockers are upstream SAM/368 and Managed native app runtime/385.
+Exit: a bounded `ManagedAppClient` can open authorized logical `sam` streams with no direct network authority; M013 becomes the local integration successor.
+
+### M013 — Canonical SAM adoption and MailTransport composition
+
+Class: integration infrastructure + corrective consolidation.
+
+Objective: consume the closed `dbowm91/i2pr-sam` M018 injected-connection provider through M012 logical `sam` streams, compose the existing synchronous MailTransport/ByteStream seam, map POP3/SMTP to typed I2P destination ports 110/25, and retire the temporary `i2pr-mail-sam` implementation after parity evidence.
+
+Blocker: M012 closure + i2pr-sam M018 closure/mainline integration. M018 is itself registered behind i2pr-sam M017.
+
+Exit: all deterministic production adapter behavior is local and closed, one canonical SAM implementation remains, and M006's only blockers are upstream i2pr SAM/368 and Managed native app runtime/385.
 
 ## 8. Cross-cutting requirements
 
@@ -280,7 +295,7 @@ Live I2P/network tests are not routine CI prerequisites. M006 may add an explici
 
 ## 11. Completion definition
 
-This roadmap closes only when M001-M006, the post-M005 M007-M009 corrective sequence, and integration-corrective M012 have evidence-based closure, the backend is independently functional, and i2pr integration preserves the no-direct-network authority boundary. M010/M011 remain historical prerequisites already closed. GUI completion is not required.
+This roadmap closes only when M001-M006, the post-M005 M007-M009 corrective sequence, and integration milestones M012-M013 have evidence-based closure, the backend is independently functional, and i2pr integration preserves the no-direct-network authority boundary. M010/M011 remain historical prerequisites already closed. GUI completion is not required.
 
 ## 12. Milestone status
 
@@ -291,10 +306,11 @@ This roadmap closes only when M001-M006, the post-M005 M007-M009 corrective sequ
 | M003 | closed | plans/implementation/mail-backend-foundation/003-pop3-receive-sync-and-reconciliation.md | plans/closure/mail-backend-foundation/003-status.md | none |
 | M004 | closed | plans/implementation/mail-backend-foundation/004-smtp-compose-outbox-and-submission.md | plans/closure/mail-backend-foundation/004-status.md | none |
 | M005 | closed | plans/implementation/mail-backend-foundation/005-backend-service-convergence.md | plans/closure/mail-backend-foundation/005-status.md | none |
-| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M012 closure + upstream SAM/368 port-aware SAM 3.3 + upstream managed-app/385 qualified Linux Secured backend |
+| M006 | blocked | plans/implementation/mail-backend-foundation/006-i2pr-managed-app-transport-adapter.md | — | M013 closure + upstream i2pr SAM/368 port-aware SAM 3.3 + upstream managed-app/385 qualified Linux Secured backend |
 | M007 | closed | plans/implementation/mail-backend-foundation/007-request-state-protocol-corrective.md | plans/closure/mail-backend-foundation/007-status.md | none |
 | M008 | closed | plans/implementation/mail-backend-foundation/008-runtime-decomposition-and-transport-seam.md | plans/closure/mail-backend-foundation/008-status.md | none |
 | M009 | closed | plans/implementation/mail-backend-foundation/009-hosted-verification-and-corrective-closure.md | plans/closure/mail-backend-foundation/009-status.md | none |
 | M010 | closed | plans/implementation/mail-backend-foundation/010-sam31-client-codec-and-contract-qualification.md | plans/closure/mail-backend-foundation/010-status.md | none |
 | M011 | closed | plans/implementation/mail-backend-foundation/011-foundation-branch-integration-merge-and-cleanup.md | plans/closure/mail-backend-foundation/011-status.md | none |
-| M012 | ready | plans/implementation/mail-backend-foundation/012-managed-app-wire-and-port-aware-sam-transport-corrective.md | — | none |
+| M012 | ready | plans/implementation/mail-backend-foundation/012-managed-app-v1-client-and-multiplexer.md | — | none |
+| M013 | blocked | plans/implementation/mail-backend-foundation/013-canonical-sam-adoption-and-mailtransport-composition.md | — | M012 closure + dbowm91/i2pr-sam M018 closure/mainline integration |
