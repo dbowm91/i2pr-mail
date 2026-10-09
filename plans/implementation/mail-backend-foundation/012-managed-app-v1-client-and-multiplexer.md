@@ -1,6 +1,8 @@
 # Mail Backend Foundation Milestone 012 — Managed-App V1 Application Client and Multiplexer
 
-Status: active — implementation in progress on `plans/m012-managed-app-adapter-prep`
+Status: closed — see `plans/closure/mail-backend-foundation/012-status.md`
+
+Executed as written on `plans/m012-managed-app-adapter-prep`. The sections below are retained unedited as the plan of record; where execution refined a value, the closure record is authoritative.
 
 Repository baseline:
 

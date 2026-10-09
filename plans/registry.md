@@ -26,13 +26,11 @@ Canonical direction:
 | Subsystem | Status | Roadmap | Current milestone | Dependencies or blockers |
 |---|---|---|---|---|
 | Mail backend post-M005 corrective | closed | plans/subsystems/mail-backend-post-m005-corrective-addendum.md | M009 closed | M007-M009 all closed; hosted verification green on run 37376165523. |
-| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M012 ready; M013 blocked; M006 blocked | M001–M005 and M007–M011 are closed on main. Upstream Plans 368–371 and 382–383 clear the old app-runtime reachability blocker. M012 is ready for the independent managed-app v1 client/multiplexer. M013 is registered behind M012 and canonical i2pr-sam M018 to compose MailTransport without a second SAM implementation. |
+| Mail backend foundation | active | plans/subsystems/mail-backend-foundation-roadmap.md | M012 closed; M013 blocked; M006 blocked | M001–M005, M007–M012 are closed. M012 closed the independent managed-app v1 client/multiplexer with deterministic fake-host evidence. M013 is registered behind canonical i2pr-sam M018 to compose MailTransport without a second SAM implementation. |
 
 ## Dependency-ready implementation plans
 
-| Subsystem | Milestone | Status | Plan | Why ready |
-|---|---|---|---|---|
-| Mail backend foundation | M012 managed-app v1 client + multiplexer | ready | plans/implementation/mail-backend-foundation/012-managed-app-v1-client-and-multiplexer.md | The application-facing managed-app v1 runtime is concrete upstream through Plans 368–371 and 382–383. M012 implements only that independent wire/multiplexer layer and requires no live router, SAM server change, or qualified OS sandbox. |
+None — M012 is closed and M013/M006 remain blocked (see below).
 
 ## Active closure work
 
@@ -57,6 +55,7 @@ None.
 | Mail backend post-M005 corrective | M009 hosted verification + corrective closure | closed | plans/closure/mail-backend-foundation/009-status.md | — |
 | Mail backend foundation | M010 SAM 3.1 client codec + contract qualification | closed | plans/closure/mail-backend-foundation/010-status.md | — |
 | Mail backend foundation | M011 foundation branch integration/merge/cleanup | closed | plans/closure/mail-backend-foundation/011-status.md | — |
+| Mail backend foundation | M012 managed-app v1 client + multiplexer | closed | plans/closure/mail-backend-foundation/012-status.md | — |
 
 ## Deferred unregistered product work
 
